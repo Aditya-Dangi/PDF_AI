@@ -7,4 +7,5 @@ import java.util.Optional;
 
 public interface FactCheckRepository extends JpaRepository<FactCheck, String> {
     Optional<FactCheck> findByMessageId(String messageId);
+    void deleteByMessageId(String messageId);
 }

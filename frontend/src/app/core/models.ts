@@ -71,6 +71,15 @@ export interface FactCheckResponse {
   durationMs: number | null;
 }
 
+/** A plain summary of a selected passage or image region - deliberately separate from
+ *  FactCheckResponse: no claim extraction, no web search, no verdict, just "what does this say". */
+export interface SummaryResponse {
+  messageId: string;
+  sourceText: string;
+  summaryText: string;
+  durationMs: number | null;
+}
+
 export type MessageRole = 'USER' | 'ASSISTANT';
 
 export interface ChatMessage {
@@ -80,6 +89,7 @@ export interface ChatMessage {
   createdAt: string;
   answer: AnswerResponse | null;
   factCheck: FactCheckResponse | null;
+  summary: SummaryResponse | null;
 }
 
 export type TemporalStatus = 'NOT_TIME_SENSITIVE' | 'CURRENT' | 'HISTORICAL_OUTDATED' | 'TIME_SENSITIVE_UNVERIFIED';

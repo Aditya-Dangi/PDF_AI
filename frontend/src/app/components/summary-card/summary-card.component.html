@@ -1,0 +1,19 @@
+<div class="border border-line rounded-xl bg-surface overflow-hidden transition-shadow duration-200 hover:shadow-sm">
+  <div class="px-5 pt-4 text-sm text-muted italic truncate" [title]="summary.sourceText">"{{ summary.sourceText }}"</div>
+
+  <div class="p-5 space-y-3">
+    <section>
+      <h3 class="text-xs font-semibold uppercase tracking-wide text-muted mb-1">📝 Summary</h3>
+      <div
+        class="prose prose-sm dark:prose-invert max-w-none prose-headings:text-ink prose-a:text-accent prose-strong:text-ink"
+        [innerHTML]="summary.summaryText | markdown"
+      ></div>
+    </section>
+
+    @if (summary.durationMs | duration; as duration) {
+      <div class="pt-1 border-t border-line">
+        <span class="text-xs text-muted" title="How long this summary took to generate">⏱ Summarized in {{ duration }}</span>
+      </div>
+    }
+  </div>
+</div>

@@ -30,6 +30,12 @@ public class ChatMessage {
     @Column(nullable = false)
     private String content;
 
+    /** For an ASSISTANT message, the id of the USER message it answers - null for a USER message
+     *  itself. Lets deleteMessage() remove a question+answer pair together without guessing at
+     *  adjacency by timestamp. Nullable so adding this column via ddl-auto=update doesn't require
+     *  backfilling pre-existing rows (an old assistant message just can't be pair-deleted). */
+    private String replyToMessageId;
+
     @Column(nullable = false)
     private Instant createdAt = Instant.now();
 }

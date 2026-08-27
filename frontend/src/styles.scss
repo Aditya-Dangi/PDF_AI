@@ -64,6 +64,12 @@ html, body {
   forced-color-adjust: none;
   transform-origin: 0 0;
   z-index: 1;
+  // The text layer container spans the whole page, with individual <span>s positioned only where
+  // real text is (see the rule below) - everywhere else in that space IS a valid image-region
+  // selection target (see pdf-viewer.component.ts's onContainerMouseDown), so it gets its own
+  // distinct "viewfinder" cursor rather than the default arrow, signaling "drag here to select a
+  // diagram/chart/screenshot" the same way a text cursor signals "drag here to select text".
+  cursor: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyOCIgaGVpZ2h0PSIyOCIgdmlld0JveD0iMCAwIDI4IDI4Ij4KICA8ZyBmaWxsPSJub25lIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+CiAgICA8cGF0aCBkPSJNMyA5VjVhMiAyIDAgMCAxIDItMmg0Ii8+CiAgICA8cGF0aCBkPSJNMTkgM2g0YTIgMiAwIDAgMSAyIDJ2NCIvPgogICAgPHBhdGggZD0iTTI1IDE5djRhMiAyIDAgMCAxLTIgMmgtNCIvPgogICAgPHBhdGggZD0iTTkgMjVINWEyIDIgMCAwIDEtMi0ydi00Ii8+CiAgPC9nPgogIDxnIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzRmNDZlNSIgc3Ryb2tlLXdpZHRoPSIyLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+CiAgICA8cGF0aCBkPSJNMyA5VjVhMiAyIDAgMCAxIDItMmg0Ii8+CiAgICA8cGF0aCBkPSJNMTkgM2g0YTIgMiAwIDAgMSAyIDJ2NCIvPgogICAgPHBhdGggZD0iTTI1IDE5djRhMiAyIDAgMCAxLTIgMmgtNCIvPgogICAgPHBhdGggZD0iTTkgMjVINWEyIDIgMCAwIDEtMi0ydi00Ii8+CiAgPC9nPgogIDxjaXJjbGUgY3g9IjE0IiBjeT0iMTQiIHI9IjIuNSIgZmlsbD0id2hpdGUiLz4KICA8Y2lyY2xlIGN4PSIxNCIgY3k9IjE0IiByPSIxLjUiIGZpbGw9IiM0ZjQ2ZTUiLz4KPC9zdmc+Cg==') 14 14, crosshair;
 }
 
 .textLayer span,

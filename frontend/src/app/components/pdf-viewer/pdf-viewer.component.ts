@@ -26,10 +26,17 @@ const MAX_SELECTION_CHARS = 600;
 /** A drag shorter than this (in either dimension, canvas pixels) is treated as an accidental
  *  click rather than a deliberate image-region selection. */
 const MIN_REGION_DRAG_PX = 20;
+/** Rendered toolbar height (~40px) + its connector arrow (~6px) + a small breathing-room gap -
+ *  the minimum clearance needed above a selection for the toolbar to render above it without
+ *  being clipped by (or overlapping into) whatever's above, e.g. a heading right above the
+ *  selected line. Below that, it flips to render below the selection instead. */
+const TOOLBAR_CLEARANCE_PX = 60;
+
+type ToolbarPlacement = 'above' | 'below';
 
 type SelectionToolbarState =
-  | { kind: 'text'; x: number; y: number; text: string }
-  | { kind: 'image'; x: number; y: number; imageDataUrl: string };
+  | { kind: 'text'; x: number; y: number; placement: ToolbarPlacement; text: string }
+  | { kind: 'image'; x: number; y: number; placement: ToolbarPlacement; imageDataUrl: string };
 
 interface PageRender {
   pageNumber: number;
@@ -206,21 +213,23 @@ export class PdfViewerComponent implements AfterViewInit, OnChanges, OnDestroy {
     if (!text) return;
 
     const range = selection.getRangeAt(0);
-    // Anchor on the FIRST LINE's own rect, not the whole range's union bounding box - a
+    // Anchor X on the FIRST LINE's own rect, not the whole range's union bounding box - a
     // multi-line selection's union box is as wide as its widest line, which can differ hugely
     // from the first line (e.g. a short line followed by a long one), pushing a box centered on
     // the union far to one side and off the visible (horizontally-scrollable) pane entirely.
     const lineRects = range.getClientRects();
-    const anchorRect = lineRects[0] ?? range.getBoundingClientRect();
+    const firstLineRect = lineRects[0] ?? range.getBoundingClientRect();
+    const lastLineRect = lineRects[lineRects.length - 1] ?? firstLineRect;
 
     const wrapper = this.containerRef.nativeElement.parentElement!;
-    const anchorX = this.toWrapperX(anchorRect.left + anchorRect.width / 2, wrapper);
-    const anchorY = this.toWrapperY(anchorRect.top, wrapper) - 8;
+    const placement = this.pickPlacement(firstLineRect.top, wrapper);
+    const anchorViewportY = placement === 'above' ? firstLineRect.top : lastLineRect.bottom;
 
     this.selectionToolbar = {
       kind: 'text',
-      x: this.clampToWrapperWidth(anchorX, wrapper),
-      y: anchorY,
+      x: this.clampToWrapperWidth(this.toWrapperX(firstLineRect.left + firstLineRect.width / 2, wrapper), wrapper),
+      y: this.toWrapperY(anchorViewportY, wrapper),
+      placement,
       text: text.length > MAX_SELECTION_CHARS ? text.slice(0, MAX_SELECTION_CHARS).trimEnd() + '…' : text
     };
   }
@@ -243,15 +252,27 @@ export class PdfViewerComponent implements AfterViewInit, OnChanges, OnDestroy {
     if (!imageDataUrl) return;
 
     const wrapper = this.containerRef.nativeElement.parentElement!;
-    const anchorX = canvasRect.left - wrapper.getBoundingClientRect().left + wrapper.scrollLeft + left + width / 2;
-    const anchorY = this.toWrapperY(canvasRect.top + top, wrapper) - 8;
+    const regionTopViewport = canvasRect.top + top;
+    const regionBottomViewport = regionTopViewport + height;
+    const placement = this.pickPlacement(regionTopViewport, wrapper);
+    const anchorViewportY = placement === 'above' ? regionTopViewport : regionBottomViewport;
 
     this.selectionToolbar = {
       kind: 'image',
-      x: this.clampToWrapperWidth(anchorX, wrapper),
-      y: anchorY,
+      x: this.clampToWrapperWidth(this.toWrapperX(canvasRect.left + left + width / 2, wrapper), wrapper),
+      y: this.toWrapperY(anchorViewportY, wrapper),
+      placement,
       imageDataUrl
     };
+  }
+
+  /** "above" the anchor unless there isn't enough visible clearance above it in the scrollable
+   *  pane's current viewport - e.g. a selection whose first line sits right below a heading, or
+   *  near the very top of the scrolled-into-view area - in which case the toolbar renders below
+   *  the anchor instead, so it never overlaps whatever's above the selection. */
+  private pickPlacement(anchorViewportTop: number, wrapper: HTMLElement): ToolbarPlacement {
+    const wrapperRect = wrapper.getBoundingClientRect();
+    return anchorViewportTop - wrapperRect.top >= TOOLBAR_CLEARANCE_PX ? 'above' : 'below';
   }
 
   private cropCanvasRegion(source: HTMLCanvasElement, x: number, y: number, width: number, height: number): string | null {

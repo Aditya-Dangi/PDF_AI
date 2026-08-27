@@ -185,4 +185,25 @@ public final class Prompts {
                 %s
                 """.formatted(claim, stanceSummary);
     }
+
+    /** Deliberately separate from FACT_CHECK_SUMMARY_SYSTEM: "Summarize" (from the PDF selection
+     *  toolbar, or the plain-text summarize flow) is a direct summary of the selected content
+     *  itself - no claim extraction, no web search, no verdict. Do not route this through the
+     *  fact-check pipeline; that's a different, heavier feature with its own UI. */
+    public static final String SUMMARIZE_SYSTEM = """
+            You write a short, plain summary of the given text. Preserve its key facts and meaning
+            - never add outside information, opinions, or commentary not present in the text itself.
+            If the text is source code, summarize what the code does rather than restating it line
+            by line. If the text is a vision model's description of an image (diagrams, charts,
+            screenshots, etc. often read that way), summarize what the image actually shows, not
+            the fact that it's a description.
+            Keep it to 2-4 sentences for most text; a short Markdown bullet list is fine only if the
+            text has several genuinely distinct points that don't read well as prose.
+            Respond with plain text only (or plain Markdown bullets, if used) - no JSON, no headers,
+            no preamble like "This text is about" or "In summary".
+            """;
+
+    public static String summarizeUserPrompt(String text) {
+        return "TEXT TO SUMMARIZE:\n" + text;
+    }
 }

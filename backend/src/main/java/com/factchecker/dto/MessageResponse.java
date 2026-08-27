@@ -8,6 +8,7 @@ public record MessageResponse(
         String content,
         Instant createdAt,
         AnswerResponse answer,
-        FactCheckResponse factCheck
+        FactCheckResponse factCheck,
+        SummaryResponse summary
 ) {
 }

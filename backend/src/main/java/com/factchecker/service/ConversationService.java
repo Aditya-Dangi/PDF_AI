@@ -8,6 +8,7 @@ import com.factchecker.domain.Document;
 import com.factchecker.domain.DocumentStatus;
 import com.factchecker.domain.FactCheck;
 import com.factchecker.domain.MessageRole;
+import com.factchecker.domain.Summary;
 import com.factchecker.dto.AnswerResponse;
 import com.factchecker.dto.AskRequest;
 import com.factchecker.dto.EvidenceDto;
@@ -16,11 +17,11 @@ import com.factchecker.dto.FactCheckResponse;
 import com.factchecker.dto.MessageResponse;
 import com.factchecker.dto.RectDto;
 import com.factchecker.dto.SourceDto;
+import com.factchecker.dto.SummaryResponse;
 import com.factchecker.exception.BadRequestException;
 import com.factchecker.exception.ResourceNotFoundException;
 import com.factchecker.factcheck.FactCheckResult;
 import com.factchecker.factcheck.FactCheckService;
-import com.factchecker.factcheck.SourceEvaluation;
 import com.factchecker.rag.RagResult;
 import com.factchecker.rag.RagService;
 import com.factchecker.rag.RetrievedChunk;
@@ -28,6 +29,7 @@ import com.factchecker.repository.AnswerRepository;
 import com.factchecker.repository.ChatMessageRepository;
 import com.factchecker.repository.ConversationRepository;
 import com.factchecker.repository.FactCheckRepository;
+import com.factchecker.repository.SummaryRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,19 +43,24 @@ public class ConversationService {
     private final ChatMessageRepository chatMessageRepository;
     private final AnswerRepository answerRepository;
     private final FactCheckRepository factCheckRepository;
+    private final SummaryRepository summaryRepository;
     private final RagService ragService;
     private final FactCheckService factCheckService;
+    private final SummarizationService summarizationService;
     private final JsonUtil jsonUtil;
 
     public ConversationService(ConversationRepository conversationRepository, ChatMessageRepository chatMessageRepository,
                                 AnswerRepository answerRepository, FactCheckRepository factCheckRepository,
-                                RagService ragService, FactCheckService factCheckService, JsonUtil jsonUtil) {
+                                SummaryRepository summaryRepository, RagService ragService, FactCheckService factCheckService,
+                                SummarizationService summarizationService, JsonUtil jsonUtil) {
         this.conversationRepository = conversationRepository;
         this.chatMessageRepository = chatMessageRepository;
         this.answerRepository = answerRepository;
         this.factCheckRepository = factCheckRepository;
+        this.summaryRepository = summaryRepository;
         this.ragService = ragService;
         this.factCheckService = factCheckService;
+        this.summarizationService = summarizationService;
         this.jsonUtil = jsonUtil;
     }
 
@@ -62,22 +69,13 @@ public class ConversationService {
         requireReady(document);
 
         Conversation conversation = getOrCreateConversation(document.getId(), userId);
-
-        ChatMessage userMessage = new ChatMessage();
-        userMessage.setConversationId(conversation.getId());
-        userMessage.setRole(MessageRole.USER);
-        userMessage.setContent(request.question());
-        chatMessageRepository.save(userMessage);
+        ChatMessage userMessage = saveUserMessage(conversation, request.question());
 
         long startedAt = System.currentTimeMillis();
         RagResult result = ragService.answer(document.getId(), request.question());
         long durationMs = System.currentTimeMillis() - startedAt;
 
-        ChatMessage assistantMessage = new ChatMessage();
-        assistantMessage.setConversationId(conversation.getId());
-        assistantMessage.setRole(MessageRole.ASSISTANT);
-        assistantMessage.setContent(result.explanation());
-        chatMessageRepository.save(assistantMessage);
+        ChatMessage assistantMessage = saveAssistantMessage(conversation, userMessage, result.explanation());
 
         List<EvidenceDto> evidenceDtos = toEvidenceDtos(result.evidence());
 
@@ -103,6 +101,32 @@ public class ConversationService {
                 evidenceDtos,
                 durationMs
         );
+    }
+
+    /** Plain summary of a selected passage / OCR'd or vision-described image region - deliberately
+     *  NOT the fact-check pipeline (see SummarizationService). Always creates a fresh message pair,
+     *  unlike factCheck()'s messageId path, since "Summarize" always comes from a new selection. */
+    @Transactional
+    public SummaryResponse summarize(Document document, String userId, String text) {
+        requireReady(document);
+
+        Conversation conversation = getOrCreateConversation(document.getId(), userId);
+        ChatMessage userMessage = saveUserMessage(conversation, "Summarize: " + text);
+
+        long startedAt = System.currentTimeMillis();
+        String summaryText = summarizationService.summarize(text);
+        long durationMs = System.currentTimeMillis() - startedAt;
+
+        ChatMessage assistantMessage = saveAssistantMessage(conversation, userMessage, summaryText);
+
+        Summary summary = new Summary();
+        summary.setMessageId(assistantMessage.getId());
+        summary.setSourceText(text);
+        summary.setSummaryText(summaryText);
+        summary.setDurationMs(durationMs);
+        summaryRepository.save(summary);
+
+        return new SummaryResponse(assistantMessage.getId(), text, summaryText, durationMs);
     }
 
     @Transactional
@@ -134,19 +158,8 @@ public class ConversationService {
             sourceText = answer.getDocumentClaim();
         } else {
             Conversation conversation = getOrCreateConversation(document.getId(), userId);
-
-            ChatMessage userMessage = new ChatMessage();
-            userMessage.setConversationId(conversation.getId());
-            userMessage.setRole(MessageRole.USER);
-            userMessage.setContent("Fact-check: " + request.claimText());
-            chatMessageRepository.save(userMessage);
-
-            ChatMessage assistantMessage = new ChatMessage();
-            assistantMessage.setConversationId(conversation.getId());
-            assistantMessage.setRole(MessageRole.ASSISTANT);
-            assistantMessage.setContent("");
-            chatMessageRepository.save(assistantMessage);
-
+            ChatMessage userMessage = saveUserMessage(conversation, "Fact-check: " + request.claimText());
+            ChatMessage assistantMessage = saveAssistantMessage(conversation, userMessage, "");
             targetMessageId = assistantMessage.getId();
             sourceText = request.claimText();
         }
@@ -201,6 +214,45 @@ public class ConversationService {
                 .orElse(List.of());
     }
 
+    /** Deletes one question+answer exchange together - the given (assistant) messageId, its
+     *  Answer/FactCheck/Summary row(s), and the USER message that prompted it (via
+     *  replyToMessageId), if one is recorded. Deleting only the assistant half would leave an
+     *  orphaned "you asked: ..." message with no reply, which is confusing, not useful. */
+    @Transactional
+    public void deleteMessage(Document document, String userId, String messageId) {
+        ChatMessage message = chatMessageRepository.findById(messageId)
+                .orElseThrow(() -> new ResourceNotFoundException("Message not found."));
+        Conversation conversation = conversationRepository.findById(message.getConversationId())
+                .orElseThrow(() -> new ResourceNotFoundException("Message not found."));
+        if (!conversation.getUserId().equals(userId) || !conversation.getDocumentId().equals(document.getId())) {
+            throw new ResourceNotFoundException("Message not found.");
+        }
+
+        answerRepository.deleteByMessageId(messageId);
+        factCheckRepository.deleteByMessageId(messageId);
+        summaryRepository.deleteByMessageId(messageId);
+
+        if (message.getReplyToMessageId() != null) {
+            chatMessageRepository.deleteById(message.getReplyToMessageId());
+        }
+        chatMessageRepository.deleteById(messageId);
+    }
+
+    /** Wipes every message in this document's conversation (but keeps the conversation row itself,
+     *  so the next ask()/summarize()/factCheck() call reuses it rather than needing special-casing
+     *  for "conversation exists but is empty" vs "conversation was never created"). */
+    @Transactional
+    public void clearMessages(Document document, String userId) {
+        conversationRepository.findByDocumentIdAndUserId(document.getId(), userId).ifPresent(conversation -> {
+            for (ChatMessage message : chatMessageRepository.findByConversationIdOrderByCreatedAtAsc(conversation.getId())) {
+                answerRepository.deleteByMessageId(message.getId());
+                factCheckRepository.deleteByMessageId(message.getId());
+                summaryRepository.deleteByMessageId(message.getId());
+            }
+            chatMessageRepository.deleteByConversationId(conversation.getId());
+        });
+    }
+
     private MessageResponse toMessageResponse(ChatMessage message) {
         AnswerResponse answerResponse = answerRepository.findByMessageId(message.getId())
                 .map(a -> new AnswerResponse(
@@ -230,13 +282,18 @@ public class ConversationService {
                 ))
                 .orElse(null);
 
+        SummaryResponse summaryResponse = summaryRepository.findByMessageId(message.getId())
+                .map(s -> new SummaryResponse(message.getId(), s.getSourceText(), s.getSummaryText(), s.getDurationMs()))
+                .orElse(null);
+
         return new MessageResponse(
                 message.getId(),
                 message.getRole().name(),
                 message.getContent(),
                 message.getCreatedAt(),
                 answerResponse,
-                factCheckResponse
+                factCheckResponse,
+                summaryResponse
         );
     }
 
@@ -250,6 +307,23 @@ public class ConversationService {
                         rc.similarity()
                 ))
                 .toList();
+    }
+
+    private ChatMessage saveUserMessage(Conversation conversation, String content) {
+        ChatMessage userMessage = new ChatMessage();
+        userMessage.setConversationId(conversation.getId());
+        userMessage.setRole(MessageRole.USER);
+        userMessage.setContent(content);
+        return chatMessageRepository.save(userMessage);
+    }
+
+    private ChatMessage saveAssistantMessage(Conversation conversation, ChatMessage replyTo, String content) {
+        ChatMessage assistantMessage = new ChatMessage();
+        assistantMessage.setConversationId(conversation.getId());
+        assistantMessage.setRole(MessageRole.ASSISTANT);
+        assistantMessage.setContent(content);
+        assistantMessage.setReplyToMessageId(replyTo.getId());
+        return chatMessageRepository.save(assistantMessage);
     }
 
     private Conversation getOrCreateConversation(String documentId, String userId) {
