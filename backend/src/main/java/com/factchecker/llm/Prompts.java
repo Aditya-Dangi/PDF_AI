@@ -38,6 +38,11 @@ public final class Prompts {
               does not address this. "explanation" may still teach the general concept from outside
               knowledge if you can, but must make clear that this part is not sourced from the
               document.
+            - If the question contains a short, truncated, or misspelled term that closely matches a
+              term actually used in the excerpts (e.g. "rxj" when the excerpts are clearly about
+              "RxJS"), answer as if they meant the term in the excerpts, and say so explicitly at the
+              start of "explanation" (e.g. "Interpreting 'rxj' as 'RxJS':") - do not silently guess
+              without flagging it, and do not refuse to answer just because the question was terse.
             - Respond with ONLY a JSON object of this exact shape, no markdown fences:
               {"documentClaim": string, "explanation": string, "insufficientContext": boolean}
             """;

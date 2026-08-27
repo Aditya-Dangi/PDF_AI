@@ -4,6 +4,7 @@ import { Claim, Evidence } from '../../core/models';
 import { ConfidenceBadgeComponent } from '../confidence-badge/confidence-badge.component';
 import { LoadingTimerComponent } from '../loading-timer/loading-timer.component';
 import { TIME_ESTIMATES } from '../../core/time-estimates';
+import { DomainPipe } from '../../core/domain.pipe';
 
 const VERDICT_LABELS: Record<string, string> = {
   SUPPORTED: 'Supported',
@@ -24,7 +25,7 @@ const TEMPORAL_LABELS: Record<string, string> = {
 @Component({
   selector: 'app-claim-card',
   standalone: true,
-  imports: [CommonModule, ConfidenceBadgeComponent, LoadingTimerComponent],
+  imports: [CommonModule, ConfidenceBadgeComponent, LoadingTimerComponent, DomainPipe],
   templateUrl: './claim-card.component.html'
 })
 export class ClaimCardComponent {

@@ -80,7 +80,7 @@
                   <span class="font-medium" [class]="stanceClass(source.stance)">{{ source.stance }}</span>
                   <span class="text-muted"> - </span>
                   <a [href]="source.url" target="_blank" rel="noopener noreferrer" class="text-ink hover:text-accent underline transition-colors duration-150">{{ source.title || source.url }}</a>
-                  <span class="text-muted"> ({{ source.authorityTier | lowercase }})</span>
+                  <span class="text-muted"> ({{ source.url | domain }}@if (source.authorityTier !== 'UNKNOWN') {<span> · {{ source.authorityTier | lowercase }}</span>})</span>
                 </li>
               }
             </ul>
