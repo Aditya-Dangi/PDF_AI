@@ -1,6 +1,8 @@
 package com.factchecker.domain;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -21,7 +23,7 @@ public class FactCheck {
     @Column(nullable = false, unique = true)
     private String messageId;
 
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     @Column(nullable = false)
     private String claimText;
 
@@ -38,12 +40,12 @@ public class FactCheck {
     @Column(nullable = false)
     private double webConfidence;
 
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     @Column(nullable = false)
     private String summary;
 
     /** JSON array of {url, title, snippet, stance, authorityTier, publishedDate}. */
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     @Column(nullable = false)
     private String sourcesJson;
 

@@ -205,6 +205,9 @@ public class ConversationService {
         );
     }
 
+    /** readOnly transaction: this fans out into several per-message lookups (answer, fact-check,
+     *  summary), so it reads on one consistent snapshot and lets Hibernate skip dirty checking. */
+    @Transactional(readOnly = true)
     public List<MessageResponse> history(Document document, String userId) {
         return conversationRepository.findByDocumentIdAndUserId(document.getId(), userId)
                 .map(conversation -> chatMessageRepository.findByConversationIdOrderByCreatedAtAsc(conversation.getId())

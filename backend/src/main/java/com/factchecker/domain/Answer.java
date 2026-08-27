@@ -1,6 +1,8 @@
 package com.factchecker.domain;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -21,11 +23,11 @@ public class Answer {
     @Column(nullable = false, unique = true)
     private String messageId;
 
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     @Column(nullable = false)
     private String documentClaim;
 
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     @Column(nullable = false)
     private String explanation;
 
@@ -39,7 +41,7 @@ public class Answer {
     private double fidelityConfidence;
 
     /** JSON array of {chunkId, page, rects, text, similarity}. */
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     @Column(nullable = false)
     private String evidenceJson;
 

@@ -1,6 +1,8 @@
 package com.factchecker.domain;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -26,17 +28,17 @@ public class Chunk {
     @Column(nullable = false)
     private int chunkOrder;
 
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     @Column(nullable = false)
     private String text;
 
     /** JSON array of {x, y, width, height} rects in page point space, origin top-left, y-down (see RectDto). */
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     @Column(nullable = false)
     private String rectsJson;
 
     /** JSON array of floats - the embedding vector. */
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     @Column(nullable = false)
     private String embeddingJson;
 

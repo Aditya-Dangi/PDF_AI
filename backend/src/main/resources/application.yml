@@ -16,10 +16,13 @@ spring:
     properties:
       hibernate:
         format_sql: false
-        # Hibernate 6 + Postgres gotcha: without this, a String field annotated @Lob maps to
-        # Postgres's "oid" large-object type (needing special large-object handling) instead of a
-        # plain "text" column. This forces the plain-text mapping, matching how it already worked
-        # under H2 - no entity annotations need to change.
+        # NOTE: this setting alone does NOT stop @Lob String fields from becoming Postgres "oid"
+        # large objects - that was verified the hard way: every @Lob String column in this schema
+        # was created as "oid" despite it being set, and reading an oid outside an explicit
+        # transaction fails with "Large Objects may not be used in auto-commit mode". Long text
+        # columns are therefore mapped with @JdbcTypeCode(SqlTypes.LONGVARCHAR) on the entity
+        # field instead (see Answer, Chunk, ChatMessage, ...), which produces a real "text" column.
+        # Kept only as a safety net for any @Lob that slips in later.
         jdbc:
           lob:
             non_contextual_creation: true

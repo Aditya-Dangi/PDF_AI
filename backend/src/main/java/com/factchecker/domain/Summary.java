@@ -1,6 +1,8 @@
 package com.factchecker.domain;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -27,11 +29,11 @@ public class Summary {
     /** The text that was actually summarized - the selected text verbatim, or the OCR/vision-
      *  resolved text for an image region (see ImageQueryService). Shown in the UI so the user can
      *  see exactly what was summarized, not just the summary itself. */
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     @Column(nullable = false)
     private String sourceText;
 
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     @Column(nullable = false)
     private String summaryText;
 
