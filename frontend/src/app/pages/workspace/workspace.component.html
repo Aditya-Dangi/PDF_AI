@@ -44,6 +44,8 @@
           [targetPage]="targetPage()"
           [targetRects]="targetRects()"
           (documentClicked)="clearHighlight()"
+          (explainSelection)="explainSelection($event)"
+          (summarizeSelection)="summarizeSelection($event)"
           class="h-full block"
         />
       } @else if (!loadError()) {
@@ -69,7 +71,7 @@
         }
 
         @if (showClaimInput()) {
-          <div class="border border-line bg-surface rounded-xl p-4 animate-fade-in-up">
+          <div #claimPanel class="border border-line bg-surface rounded-xl p-4 animate-fade-in-up">
             <h3 class="text-sm font-medium text-ink mb-2">Fact-check any claim about this document</h3>
             <div class="flex gap-2">
               <input
@@ -103,7 +105,8 @@
                     insufficientContext: false,
                     retrievalConfidence: 100,
                     fidelityConfidence: 100,
-                    evidence: []
+                    evidence: [],
+                    durationMs: null
                   }"
                   [factCheck]="result"
                 />

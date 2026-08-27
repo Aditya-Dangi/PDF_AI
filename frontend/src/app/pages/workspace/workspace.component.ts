@@ -57,6 +57,7 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
   private pollHandle: ReturnType<typeof setInterval> | null = null;
 
   @ViewChild('messagesEnd') private messagesEnd?: ElementRef<HTMLDivElement>;
+  @ViewChild('claimPanel') private claimPanel?: ElementRef<HTMLDivElement>;
 
   constructor(
     private route: ActivatedRoute,
@@ -151,6 +152,36 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
         this.loadError.set(err?.error?.message ?? 'Failed to get an answer.');
       }
     });
+  }
+
+  /** "Explain" from the PDF selection toolbar - reuses the normal ask() flow verbatim, feeding the
+   *  selected passage as the question. Since the selection came directly from the document, its
+   *  embedding is a near-exact match for the source chunk it was taken from, so grounded retrieval
+   *  finds the right context automatically with no new backend work needed. */
+  explainSelection(text: string): void {
+    if (this.document()?.status !== 'READY') {
+      this.loadError.set('Questions are available once this document finishes indexing.');
+      return;
+    }
+    this.question = `Explain this: "${text}"`;
+    this.ask();
+  }
+
+  /** "Summarize" from the PDF selection toolbar - reuses the existing web fact-check flow verbatim
+   *  (same claim-checking pipeline as the "Fact-check a claim" panel), so the selected passage gets
+   *  a web-verified summary with precise source attribution, not just a plain LLM paraphrase. */
+  summarizeSelection(text: string): void {
+    if (this.document()?.status !== 'READY') {
+      this.loadError.set('Fact-checking is available once this document finishes indexing.');
+      return;
+    }
+    this.claimText = text;
+    this.showClaimInput.set(true);
+    this.checkClaim();
+    // The claim panel renders at the top of the (possibly long, already-scrolled) conversation
+    // list - without this, triggering it from a selection deep in a long chat could open it
+    // entirely out of view.
+    setTimeout(() => this.claimPanel?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   }
 
   requestFactCheck(exchange: AnsweredExchange): void {

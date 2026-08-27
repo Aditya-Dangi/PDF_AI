@@ -19,6 +19,16 @@ import { Rect } from '../../core/models';
 pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
 
 const DOCUMENT_LOAD_TIMEOUT_MS = 20000;
+/** Selections longer than this are truncated (with a trailing ellipsis) before being sent as a
+ *  question/claim - long enough for a real paragraph or a short code snippet, short enough to
+ *  stay a reasonably-sized embedding query and a readable bubble in the chat panel. */
+const MAX_SELECTION_CHARS = 600;
+
+interface SelectionToolbarState {
+  x: number;
+  y: number;
+  text: string;
+}
 
 interface PageRender {
   pageNumber: number;
@@ -41,11 +51,19 @@ export class PdfViewerComponent implements AfterViewInit, OnChanges, OnDestroy {
   /** Fired on any click within the document area - the parent uses this to dismiss the current
    *  evidence highlight once the user has looked at it and moved on. */
   @Output() documentClicked = new EventEmitter<void>();
+  /** Fired when the user picks "Explain" from the selection toolbar, with the selected text. */
+  @Output() explainSelection = new EventEmitter<string>();
+  /** Fired when the user picks "Summarize" (web-verified) from the selection toolbar. */
+  @Output() summarizeSelection = new EventEmitter<string>();
 
   loading = true;
   error: string | null = null;
   /** How many pages have finished rendering so far, and the total once known - drives the progress text. */
   progress = { rendered: 0, total: 0 };
+  /** Set while the user has an active text selection with a floating toolbar showing above it;
+   *  null otherwise. Position is relative to the scrollable wrapper, including its current scroll
+   *  offset, so it stays pinned to the selection rather than the viewport. */
+  selectionToolbar: SelectionToolbarState | null = null;
 
   @ViewChild('container', { static: true }) containerRef!: ElementRef<HTMLDivElement>;
 
@@ -74,6 +92,60 @@ export class PdfViewerComponent implements AfterViewInit, OnChanges, OnDestroy {
 
   retry(): void {
     this.loadDocument();
+  }
+
+  /** Anticipates a new selection starting - hides any stale toolbar immediately rather than
+   *  leaving it floating over the old (about to be replaced) selection while the user drags. */
+  onContainerMouseDown(): void {
+    this.selectionToolbar = null;
+  }
+
+  onContainerMouseUp(): void {
+    const selection = window.getSelection();
+    if (!selection || selection.isCollapsed || selection.rangeCount === 0) return;
+    if (!this.containerRef.nativeElement.contains(selection.anchorNode)) return;
+
+    const text = selection.toString().trim();
+    if (!text) return;
+
+    const range = selection.getRangeAt(0);
+    // Anchor on the FIRST LINE's own rect, not the whole range's union bounding box - a
+    // multi-line selection's union box is as wide as its widest line, which can differ hugely
+    // from the first line (e.g. a short line followed by a long one), pushing a box centered on
+    // the union far to one side and off the visible (horizontally-scrollable) pane entirely.
+    const lineRects = range.getClientRects();
+    const anchorRect = lineRects[0] ?? range.getBoundingClientRect();
+
+    const wrapper = this.containerRef.nativeElement.parentElement!;
+    const wrapperRect = wrapper.getBoundingClientRect();
+    const rawX = anchorRect.left - wrapperRect.left + wrapper.scrollLeft + anchorRect.width / 2;
+    // Clamp so the toolbar (roughly 170px wide) can't render partly outside the visible pane,
+    // even when the anchor line sits near the left/right edge of the scrollable viewport.
+    const minX = wrapper.scrollLeft + 90;
+    const maxX = wrapper.scrollLeft + wrapper.clientWidth - 90;
+
+    this.selectionToolbar = {
+      x: Math.max(minX, Math.min(rawX, maxX)),
+      y: anchorRect.top - wrapperRect.top + wrapper.scrollTop - 8,
+      text: text.length > MAX_SELECTION_CHARS ? text.slice(0, MAX_SELECTION_CHARS).trimEnd() + '…' : text
+    };
+  }
+
+  onExplainClick(): void {
+    if (!this.selectionToolbar) return;
+    this.explainSelection.emit(this.selectionToolbar.text);
+    this.dismissSelectionToolbar();
+  }
+
+  onSummarizeClick(): void {
+    if (!this.selectionToolbar) return;
+    this.summarizeSelection.emit(this.selectionToolbar.text);
+    this.dismissSelectionToolbar();
+  }
+
+  private dismissSelectionToolbar(): void {
+    this.selectionToolbar = null;
+    window.getSelection()?.removeAllRanges();
   }
 
   private async loadDocument(): Promise<void> {

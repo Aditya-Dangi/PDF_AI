@@ -30,5 +30,33 @@
       </button>
     </div>
   }
-  <div #container class="py-4" (click)="documentClicked.emit()"></div>
+  <div
+    #container
+    class="py-4"
+    (click)="documentClicked.emit()"
+    (mousedown)="onContainerMouseDown()"
+    (mouseup)="onContainerMouseUp()"
+  ></div>
+
+  @if (selectionToolbar; as toolbar) {
+    <div
+      class="absolute z-20 flex gap-1 bg-surface border border-line rounded-lg shadow-md px-1 py-1 -translate-x-1/2 -translate-y-full animate-fade-in"
+      [style.left.px]="toolbar.x"
+      [style.top.px]="toolbar.y"
+      (mousedown)="$event.stopPropagation()"
+    >
+      <button
+        (click)="onExplainClick()"
+        class="text-xs font-medium text-ink rounded-md px-2.5 py-1 transition-colors duration-150 hover:bg-surface-alt"
+      >
+        💡 Explain
+      </button>
+      <button
+        (click)="onSummarizeClick()"
+        class="text-xs font-medium text-ink rounded-md px-2.5 py-1 transition-colors duration-150 hover:bg-surface-alt"
+      >
+        🌐 Summarize
+      </button>
+    </div>
+  }
 </div>
