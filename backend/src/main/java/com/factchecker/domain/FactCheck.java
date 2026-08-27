@@ -47,6 +47,10 @@ public class FactCheck {
     @Column(nullable = false)
     private String sourcesJson;
 
+    /** How long FactCheckService.factCheck() took, wall-clock, for display in the UI. Nullable so
+     *  adding this column via ddl-auto=update doesn't require backfilling pre-existing rows. */
+    private Long durationMs;
+
     @Column(nullable = false)
     private Instant createdAt = Instant.now();
 }

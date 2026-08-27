@@ -20,6 +20,17 @@ public final class Prompts {
               Never dump a raw, run-on quote just because that's how it appeared in the excerpt. This
               field is later checked against the document itself, so its *content* must stay strictly
               grounded, even though its *wording* is cleaned up.
+            - EXCEPTION to the sentence-rewriting rule above: if the question asks for code or an
+              implementation, and the excerpts contain actual source code, documentClaim MUST
+              reproduce that code VERBATIM inside a fenced Markdown code block (```language ... ```),
+              copying the exact syntax, variable names, and formatting from the document.
+              Never paraphrase code into pseudocode, never translate it into a different programming
+              language, and never describe it in prose instead of quoting it - the "rewrite into a
+              sentence" instruction applies only to surrounding prose, not to code itself. A one-line
+              lead-in sentence before the code block is fine (e.g. "The document's optimal solution
+              is:"). If the excerpts contain multiple versions (e.g. brute-force and optimal), quote
+              the one the question is actually asking about; if that's ambiguous, prefer the final/
+              optimal version and mention in "explanation" that other versions also appear.
             - If the question asks about the reader's own work ("what have I used", "in my
               project", "show my implementation"), and the excerpts contain a specific real example
               of that (an actual usage, a named component/file, a concrete decision made) rather than

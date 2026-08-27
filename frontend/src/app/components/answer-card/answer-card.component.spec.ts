@@ -23,7 +23,8 @@ describe('AnswerCardComponent', () => {
         text: 'Claim two: The Eiffel Tower is located in Paris, France, and was completed in 1889.',
         similarity: 0.6235
       }
-    ]
+    ],
+    durationMs: 4200
   };
 
   beforeEach(async () => {
@@ -118,7 +119,8 @@ describe('AnswerCardComponent', () => {
         verdict: 'SUPPORTED',
         webConfidence: 75.2,
         summary: 'Multiple reliable sources confirm this.',
-        sources: []
+        sources: [],
+        durationMs: 6800
       };
       fixture.detectChanges();
 

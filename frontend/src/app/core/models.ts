@@ -39,6 +39,7 @@ export interface AnswerResponse {
   retrievalConfidence: number;
   fidelityConfidence: number;
   evidence: Evidence[];
+  durationMs: number | null;
 }
 
 export type Verdict =
@@ -67,6 +68,7 @@ export interface FactCheckResponse {
   webConfidence: number;
   summary: string;
   sources: Source[];
+  durationMs: number | null;
 }
 
 export type MessageRole = 'USER' | 'ASSISTANT';

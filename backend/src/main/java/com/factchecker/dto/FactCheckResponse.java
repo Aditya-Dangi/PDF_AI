@@ -10,6 +10,7 @@ public record FactCheckResponse(
         String verdict,
         double webConfidence,
         String summary,
-        List<SourceDto> sources
+        List<SourceDto> sources,
+        Long durationMs
 ) {
 }

@@ -38,9 +38,12 @@
         <div class="prose prose-sm dark:prose-invert max-w-none prose-headings:text-ink prose-a:text-accent prose-strong:text-ink prose-table:text-sm" [innerHTML]="answer.explanation | markdown"></div>
       </section>
 
-      <div class="flex flex-wrap gap-x-6 gap-y-2 pt-1 border-t border-line">
+      <div class="flex flex-wrap items-center gap-x-6 gap-y-2 pt-1 border-t border-line">
         <app-confidence-badge label="Document Retrieval" [value]="answer.retrievalConfidence" />
         <app-confidence-badge label="Document Fidelity" [value]="answer.fidelityConfidence" />
+        @if (answer.durationMs | duration; as duration) {
+          <span class="text-xs text-muted" title="How long this answer took to generate">⏱ Answered in {{ duration }}</span>
+        }
       </div>
 
       <div class="flex flex-wrap gap-2">
@@ -93,7 +96,12 @@
             </span>
           </section>
 
-          <app-confidence-badge label="Web Verification" [value]="factCheck.webConfidence" />
+          <div class="flex flex-wrap items-center gap-x-6 gap-y-2">
+            <app-confidence-badge label="Web Verification" [value]="factCheck.webConfidence" />
+            @if (factCheck.durationMs | duration; as duration) {
+              <span class="text-xs text-muted" title="How long this web check took to run">⏱ Checked in {{ duration }}</span>
+            }
+          </div>
         </div>
       }
 

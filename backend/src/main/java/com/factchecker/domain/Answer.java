@@ -43,6 +43,11 @@ public class Answer {
     @Column(nullable = false)
     private String evidenceJson;
 
+    /** How long RagService.answer() took, wall-clock, for display in the UI. Nullable so adding
+     *  this column via ddl-auto=update doesn't require backfilling rows from before this field
+     *  existed - the frontend just omits the badge when it's null. */
+    private Long durationMs;
+
     @Column(nullable = false)
     private Instant createdAt = Instant.now();
 }

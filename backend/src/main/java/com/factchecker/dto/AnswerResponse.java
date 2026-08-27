@@ -10,6 +10,7 @@ public record AnswerResponse(
         boolean insufficientContext,
         double retrievalConfidence,
         double fidelityConfidence,
-        List<EvidenceDto> evidence
+        List<EvidenceDto> evidence,
+        Long durationMs
 ) {
 }

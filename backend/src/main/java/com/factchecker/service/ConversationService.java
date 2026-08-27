@@ -69,7 +69,9 @@ public class ConversationService {
         userMessage.setContent(request.question());
         chatMessageRepository.save(userMessage);
 
+        long startedAt = System.currentTimeMillis();
         RagResult result = ragService.answer(document.getId(), request.question());
+        long durationMs = System.currentTimeMillis() - startedAt;
 
         ChatMessage assistantMessage = new ChatMessage();
         assistantMessage.setConversationId(conversation.getId());
@@ -87,6 +89,7 @@ public class ConversationService {
         answer.setRetrievalConfidence(result.retrievalConfidence());
         answer.setFidelityConfidence(result.fidelityConfidence());
         answer.setEvidenceJson(jsonUtil.toJson(evidenceDtos));
+        answer.setDurationMs(durationMs);
         answerRepository.save(answer);
 
         return new AnswerResponse(
@@ -97,7 +100,8 @@ public class ConversationService {
                 result.insufficientContext(),
                 result.retrievalConfidence(),
                 result.fidelityConfidence(),
-                evidenceDtos
+                evidenceDtos,
+                durationMs
         );
     }
 
@@ -147,7 +151,9 @@ public class ConversationService {
             sourceText = request.claimText();
         }
 
+        long startedAt = System.currentTimeMillis();
         FactCheckResult result = factCheckService.factCheck(sourceText);
+        long durationMs = System.currentTimeMillis() - startedAt;
 
         factCheckRepository.findByMessageId(targetMessageId).ifPresent(factCheckRepository::delete);
 
@@ -164,6 +170,7 @@ public class ConversationService {
         factCheck.setWebConfidence(result.webConfidence());
         factCheck.setSummary(result.summary());
         factCheck.setSourcesJson(jsonUtil.toJson(sourceDtos));
+        factCheck.setDurationMs(durationMs);
         factCheckRepository.save(factCheck);
 
         if (!hasMessageId) {
@@ -180,7 +187,8 @@ public class ConversationService {
                 result.verdict().name(),
                 result.webConfidence(),
                 result.summary(),
-                sourceDtos
+                sourceDtos,
+                durationMs
         );
     }
 
@@ -203,7 +211,8 @@ public class ConversationService {
                         a.isInsufficientContext(),
                         a.getRetrievalConfidence(),
                         a.getFidelityConfidence(),
-                        jsonUtil.fromJson(a.getEvidenceJson(), new TypeReference<List<EvidenceDto>>() {})
+                        jsonUtil.fromJson(a.getEvidenceJson(), new TypeReference<List<EvidenceDto>>() {}),
+                        a.getDurationMs()
                 ))
                 .orElse(null);
 
@@ -216,7 +225,8 @@ public class ConversationService {
                         f.getVerdict().name(),
                         f.getWebConfidence(),
                         f.getSummary(),
-                        jsonUtil.fromJson(f.getSourcesJson(), new TypeReference<List<SourceDto>>() {})
+                        jsonUtil.fromJson(f.getSourcesJson(), new TypeReference<List<SourceDto>>() {}),
+                        f.getDurationMs()
                 ))
                 .orElse(null);
 

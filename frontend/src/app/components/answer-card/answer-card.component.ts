@@ -7,6 +7,7 @@ import { LoadingTimerComponent } from '../loading-timer/loading-timer.component'
 import { TIME_ESTIMATES } from '../../core/time-estimates';
 import { DomainPipe } from '../../core/domain.pipe';
 import { MarkdownPipe } from '../../core/markdown.pipe';
+import { DurationPipe } from '../../core/duration.pipe';
 
 const VERDICT_LABELS: Record<string, string> = {
   SUPPORTED: 'Supported',
@@ -20,7 +21,7 @@ const VERDICT_LABELS: Record<string, string> = {
 @Component({
   selector: 'app-answer-card',
   standalone: true,
-  imports: [CommonModule, ConfidenceBadgeComponent, ClaimCardComponent, LoadingTimerComponent, DomainPipe, MarkdownPipe],
+  imports: [CommonModule, ConfidenceBadgeComponent, ClaimCardComponent, LoadingTimerComponent, DomainPipe, MarkdownPipe, DurationPipe],
   templateUrl: './answer-card.component.html'
 })
 export class AnswerCardComponent {
