@@ -1,0 +1,26 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:factchecker-test-${random.uuid};DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+
+app:
+  upload-dir: ${java.io.tmpdir}/factchecker-test-uploads
+  jwt:
+    secret: test-only-secret-never-used-outside-the-test-suite
+    expiration-minutes: 720
+  cors:
+    allowed-origin: http://localhost:4200
+  # Absent by default in this file (which otherwise fully replaces src/main/resources/application.yml
+  # for test runs, rather than layering on top of it) - no prior test needed real Ollama/SearXNG
+  # connectivity, but the eval suite (src/test/java/.../eval) deliberately does.
+  searxng:
+    base-url: http://localhost:8888
+  ollama:
+    base-url: http://localhost:11434
+    embedding-model: nomic-embed-text
+    chat-model: llama3.2

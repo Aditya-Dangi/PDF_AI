@@ -1,0 +1,9 @@
+target/
+data/
+uploads/
+eval-reports/
+application-local.yml
+application-local.yaml
+*.log
+.idea/
+*.iml

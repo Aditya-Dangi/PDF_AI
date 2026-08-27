@@ -1,0 +1,49 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: ai-document-fact-checker
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/factchecker}
+    driver-class-name: org.postgresql.Driver
+    username: ${DB_USERNAME:factchecker}
+    password: ${DB_PASSWORD:factchecker}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: false
+        # Hibernate 6 + Postgres gotcha: without this, a String field annotated @Lob maps to
+        # Postgres's "oid" large-object type (needing special large-object handling) instead of a
+        # plain "text" column. This forces the plain-text mapping, matching how it already worked
+        # under H2 - no entity annotations need to change.
+        jdbc:
+          lob:
+            non_contextual_creation: true
+  servlet:
+    multipart:
+      max-file-size: 30MB
+      max-request-size: 30MB
+
+app:
+  upload-dir: ./uploads
+  jwt:
+    secret: ${JWT_SECRET:change-this-to-a-random-64-byte-secret-in-your-env}
+    expiration-minutes: 720
+  cors:
+    allowed-origin: http://localhost:4200
+  searxng:
+    base-url: ${SEARXNG_BASE_URL:http://localhost:8888}
+  ollama:
+    base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
+    embedding-model: ${OLLAMA_EMBEDDING_MODEL:nomic-embed-text}
+    chat-model: ${OLLAMA_CHAT_MODEL:llama3.2}
+  ocr:
+    tessdata-path: ${TESSDATA_PATH:}
+
+logging:
+  level:
+    com.factchecker: INFO

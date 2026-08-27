@@ -1,0 +1,40 @@
+<button
+  (click)="themeService.toggle()"
+  [attr.aria-label]="themeService.theme() === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
+  [attr.title]="themeService.theme() === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
+  class="relative w-8 h-8 rounded-lg border border-line bg-surface hover:bg-surface-alt transition-colors duration-150 flex items-center justify-center overflow-hidden shrink-0"
+>
+  <!-- Sun -->
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    class="absolute w-4 h-4 text-amber-500 transition-all duration-300"
+    [class.opacity-100]="themeService.theme() === 'light'"
+    [class.opacity-0]="themeService.theme() !== 'light'"
+    [class.rotate-0]="themeService.theme() === 'light'"
+    [class.rotate-90]="themeService.theme() !== 'light'"
+  >
+    <circle cx="12" cy="12" r="4" />
+    <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+  </svg>
+
+  <!-- Moon -->
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    class="absolute w-4 h-4 text-indigo-400 transition-all duration-300"
+    [class.opacity-100]="themeService.theme() === 'dark'"
+    [class.opacity-0]="themeService.theme() !== 'dark'"
+    [class.rotate-0]="themeService.theme() === 'dark'"
+    [class.-rotate-90]="themeService.theme() !== 'dark'"
+  >
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z" />
+  </svg>
+</button>

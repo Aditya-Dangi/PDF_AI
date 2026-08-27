@@ -1,0 +1,13 @@
+<div class="flex items-center gap-2">
+  <span class="text-xs text-muted">{{ label }}</span>
+  <div class="flex-1 h-1.5 bg-surface-alt rounded-full overflow-hidden min-w-[60px] max-w-[120px]">
+    <div
+      class="h-full rounded-full transition-[width] duration-700 ease-out"
+      [class.bg-green-500]="tier() === 'high'"
+      [class.bg-amber-500]="tier() === 'medium'"
+      [class.bg-red-500]="tier() === 'low'"
+      [style.width.%]="displayValue()"
+    ></div>
+  </div>
+  <span class="text-xs font-medium text-ink w-10 text-right tabular-nums">{{ displayValue().toFixed(0) }}%</span>
+</div>

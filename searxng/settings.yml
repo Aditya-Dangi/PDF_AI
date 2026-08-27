@@ -1,0 +1,14 @@
+# Minimal overrides for local, single-backend use - merged on top of SearXNG's own defaults.
+use_default_settings: true
+
+server:
+  # Local-only instance with one trusted caller (this project's backend) - the bot-detection
+  # limiter is what SearXNG's default config uses to 403 non-browser API clients, which is exactly
+  # what a normal server-to-server search request looks like.
+  secret_key: "factchecker-local-searxng-secret-do-not-expose-publicly"
+  limiter: false
+
+search:
+  formats:
+    - html
+    - json

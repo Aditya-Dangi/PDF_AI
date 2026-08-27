@@ -1,0 +1,102 @@
+<div class="border border-line rounded-xl bg-surface overflow-hidden transition-shadow duration-200 hover:shadow-sm">
+  <div class="p-5 space-y-4">
+    <div class="flex items-start justify-between gap-3">
+      <p class="text-sm font-medium text-ink">{{ claim.claimText }}</p>
+      <div class="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
+        @if (claim.mode === 'CHALLENGE') {
+          <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300">Challenge</span>
+        }
+        <span class="text-xs text-muted border border-line rounded-full px-2 py-0.5">{{ claim.claimType | lowercase }}</span>
+      </div>
+    </div>
+
+    @if (claim.evidence.length > 0) {
+      <section>
+        <h4 class="text-xs font-semibold uppercase tracking-wide text-muted mb-1">📄 PDF Evidence</h4>
+        <div class="flex flex-wrap gap-2">
+          @for (ev of claim.evidence; track ev.chunkId) {
+            <button
+              (click)="evidenceSelected.emit(ev)"
+              class="text-xs bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700 text-yellow-800 dark:text-yellow-300 rounded-full px-3 py-1 transition-all duration-150 hover:bg-yellow-100 dark:hover:bg-yellow-900/50 hover:scale-105 active:scale-95"
+            >
+              View on page {{ ev.page }} ({{ (ev.similarity * 100).toFixed(0) }}% match)
+            </button>
+          }
+        </div>
+      </section>
+    } @else {
+      <p class="text-xs text-muted italic">No matching passage found in the document for this claim.</p>
+    }
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <section>
+        <h4 class="text-xs font-semibold uppercase tracking-wide text-green-600 dark:text-green-400 mb-1.5">✓ Supporting Evidence ({{ claim.supportSources.length }})</h4>
+        @if (claim.supportSources.length === 0) {
+          <p class="text-xs text-muted italic">No supporting source found.</p>
+        }
+        <ul class="space-y-1.5">
+          @for (source of claim.supportSources; track source.url) {
+            <li class="text-xs bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-900/40 rounded-lg px-2.5 py-2 transition-colors duration-150">
+              <a [href]="source.url" target="_blank" rel="noopener noreferrer" class="text-ink hover:text-accent font-medium underline transition-colors duration-150">{{ source.title || source.url }}</a>
+              <span class="text-muted"> ({{ source.authorityTier | lowercase }})</span>
+              <p class="text-muted mt-0.5">{{ source.snippet }}</p>
+            </li>
+          }
+        </ul>
+      </section>
+
+      <section>
+        <h4 class="text-xs font-semibold uppercase tracking-wide text-red-600 dark:text-red-400 mb-1.5">✗ Counter Evidence ({{ claim.counterSources.length }})</h4>
+        @if (claim.counterSources.length === 0) {
+          <p class="text-xs text-muted italic">No contradicting or qualifying source found.</p>
+        }
+        <ul class="space-y-1.5">
+          @for (source of claim.counterSources; track source.url) {
+            <li class="text-xs bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/40 rounded-lg px-2.5 py-2 transition-colors duration-150">
+              <a [href]="source.url" target="_blank" rel="noopener noreferrer" class="text-ink hover:text-accent font-medium underline transition-colors duration-150">{{ source.title || source.url }}</a>
+              <span class="text-muted"> ({{ source.authorityTier | lowercase }})</span>
+              <p class="text-muted mt-0.5">{{ source.snippet }}</p>
+            </li>
+          }
+        </ul>
+      </section>
+    </div>
+
+    <section class="flex items-center gap-3 pt-1 border-t border-line">
+      <h4 class="text-xs font-semibold uppercase tracking-wide text-muted">⚖️ Verdict</h4>
+      <span class="text-xs font-semibold px-2.5 py-1 rounded-full transition-colors duration-150" [class]="verdictClass(claim.verdict)">
+        {{ verdictLabel(claim.verdict) }}
+      </span>
+      <span class="text-xs px-2 py-0.5 rounded-full border transition-colors duration-150" [class]="temporalClass(claim.temporalStatus)">
+        {{ temporalLabel(claim.temporalStatus) }}
+      </span>
+    </section>
+
+    <section>
+      <h4 class="text-xs font-semibold uppercase tracking-wide text-muted mb-1">🧠 Why This Verdict</h4>
+      <p class="text-sm text-ink">{{ claim.rationale }}</p>
+    </section>
+
+    <div class="flex flex-wrap gap-x-6 gap-y-2 pt-1 border-t border-line">
+      <app-confidence-badge label="Document Retrieval" [value]="claim.retrievalConfidence" />
+      <app-confidence-badge label="Document Fidelity" [value]="claim.fidelityConfidence" />
+      <app-confidence-badge label="Web Verification" [value]="claim.webConfidence" />
+      <span class="text-xs text-muted self-center">
+        {{ claim.independentSourceCount }}/{{ claim.rawSourceCount }} independent sources
+      </span>
+    </div>
+
+    @if (claim.mode === 'NORMAL') {
+      @if (!challenging) {
+        <button
+          (click)="challengeRequested.emit(claim)"
+          class="text-sm font-medium text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-900/30 rounded-lg px-4 py-2 transition-all duration-150 hover:bg-purple-100 dark:hover:bg-purple-900/50 active:scale-95"
+        >
+          ⚔️ Try to disprove this claim
+        </button>
+      } @else {
+        <app-loading-timer [active]="challenging" label="Attempting to disprove this claim..." [estimatedSeconds]="challengeEstimateSeconds" />
+      }
+    }
+  </div>
+</div>

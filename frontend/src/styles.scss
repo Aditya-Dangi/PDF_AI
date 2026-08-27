@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-bg: #fafaf9;
+  --color-surface: #ffffff;
+  --color-surface-alt: #f7f7f6;
+  --color-ink: #1a1a2e;
+  --color-muted: #6b7280;
+  --color-border: #e5e7eb;
+  --color-accent: #4338ca;
+  --color-accent-hover: #3730a3;
+  /* Pre-mixed with alpha, rather than relying on Tailwind's color-opacity modifier (e.g. ring-accent/30)
+     against a var()-based color, whose alpha support varies by Tailwind version - this always works. */
+  --color-focus-ring: rgba(67, 56, 202, 0.25);
+}
+
+.dark {
+  --color-bg: #0f1117;
+  --color-surface: #191c26;
+  --color-surface-alt: #21242f;
+  --color-ink: #e9eaf2;
+  --color-muted: #9499ab;
+  --color-border: #2b2f3d;
+  --color-accent: #6366f1;
+  --color-accent-hover: #818cf8;
+  --color-focus-ring: rgba(129, 140, 248, 0.3);
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  background-color: var(--color-bg);
+  color: var(--color-ink);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Elements that opt into transition-colors (buttons, cards, badges - see components) get a smooth
+   theme-toggle swap "for free". Deliberately NOT applied globally: transitioning every DOM node
+   forces a style recalculation on all of them for every toggle, which is real, needless cost on a
+   large page. Untransitioned elements just snap instantly, which is a normal, cheap default. */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* pdf.js text layer (selectable text overlaid on the rendered PDF canvas). These are pdf.js's own
+   recommended rules for the classes its renderTextLayer() output relies on - see
+   node_modules/pdfjs-dist/web/pdf_viewer.css. */
+.textLayer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  line-height: 1;
+  text-align: initial;
+  -webkit-text-size-adjust: none;
+  text-size-adjust: none;
+  forced-color-adjust: none;
+  transform-origin: 0 0;
+  z-index: 1;
+}
+
+.textLayer span,
+.textLayer br {
+  color: transparent;
+  position: absolute;
+  white-space: pre;
+  cursor: text;
+  transform-origin: 0% 0%;
+}
+
+.textLayer ::selection {
+  background: rgba(0, 100, 255, 0.35);
+}

@@ -1,0 +1,19 @@
+@if (active) {
+  <div class="w-full max-w-sm">
+    @if (estimatedSeconds) {
+      <div class="h-1 w-full bg-surface-alt rounded-full overflow-hidden mb-2">
+        <div
+          class="h-full bg-accent rounded-full transition-[width] duration-700 ease-out"
+          [style.width.%]="progressPercent()"
+        ></div>
+      </div>
+    }
+    <div class="flex items-center gap-2.5 text-sm text-muted">
+      <div class="w-3.5 h-3.5 border-2 border-line border-t-accent rounded-full animate-spin shrink-0"></div>
+      <span>{{ label }}</span>
+      <span class="text-xs text-muted tabular-nums">
+        ({{ formattedTime() }}@if (formattedEstimate(); as est) { <span> / ~{{ est }} est.</span> })
+      </span>
+    </div>
+  </div>
+}

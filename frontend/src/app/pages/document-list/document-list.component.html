@@ -1,0 +1,80 @@
+<div class="min-h-screen bg-paper">
+  <header class="border-b border-line bg-surface">
+    <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+      <h1 class="text-lg font-semibold text-ink">AI Document Fact Checker</h1>
+      <div class="flex items-center gap-3">
+        <app-theme-toggle />
+        <button (click)="logout()" class="text-sm text-muted hover:text-ink transition-colors duration-150">Sign out</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-6 py-8">
+    <div
+      class="rounded-xl border-2 border-dashed p-10 text-center transition-colors duration-200"
+      [class.border-accent]="dragging()"
+      [class.border-line]="!dragging()"
+      (drop)="onDrop($event)"
+      (dragover)="onDragOver($event)"
+      (dragleave)="onDragLeave()"
+    >
+      <p class="text-sm text-muted mb-3">Drag and drop a PDF here, or</p>
+      <label
+        class="inline-block bg-accent text-white text-sm font-medium rounded-lg px-4 py-2 cursor-pointer transition-all duration-150 hover:bg-accent-hover active:scale-95"
+        [class.opacity-50]="uploading()"
+      >
+        Choose PDF
+        <input type="file" accept="application/pdf" class="hidden" (change)="onFileSelected($event)" [disabled]="uploading()" />
+      </label>
+
+      @if (uploading()) {
+        <div class="flex justify-center mt-3">
+          <app-loading-timer [active]="uploading()" label="Uploading..." [estimatedSeconds]="uploadEstimateSeconds" />
+        </div>
+      }
+
+      @if (error()) {
+        <p class="text-sm text-red-600 dark:text-red-400 mt-3">{{ error() }}</p>
+      }
+    </div>
+
+    <div class="mt-8">
+      @if (documents().length === 0) {
+        <p class="text-sm text-muted text-center py-12">No documents yet. Upload a PDF to get started.</p>
+      } @else {
+        <ul class="divide-y divide-line bg-surface border border-line rounded-xl overflow-hidden">
+          @for (doc of documents(); track doc.id) {
+            <li
+              class="px-5 py-4 cursor-pointer hover:bg-surface-alt transition-colors duration-150 animate-fade-in-up"
+              [class.cursor-default]="doc.status === 'FAILED'"
+              (click)="open(doc)"
+            >
+              <div class="flex items-center justify-between">
+                <div class="min-w-0">
+                  <p class="text-sm font-medium text-ink truncate">{{ doc.filename }}</p>
+                  <p class="text-xs text-muted mt-0.5">
+                    {{ doc.pageCount > 0 ? doc.pageCount + ' pages' : '' }}
+                    @if (doc.status === 'FAILED' && doc.failureReason) {
+                      <span class="text-red-500 dark:text-red-400"> - {{ doc.failureReason }}</span>
+                    }
+                  </p>
+                </div>
+                <div class="flex items-center gap-3 shrink-0 ml-4">
+                  <span class="text-xs font-medium px-2 py-1 rounded-full transition-colors duration-150" [class]="statusBadgeClass(doc)">
+                    {{ statusLabel(doc) }}
+                  </span>
+                  <button (click)="remove(doc, $event)" class="text-xs text-muted hover:text-red-600 dark:hover:text-red-400 transition-colors duration-150">Delete</button>
+                </div>
+              </div>
+              @if (doc.status === 'PROCESSING') {
+                <div class="mt-2">
+                  <app-loading-timer [active]="true" label="Extracting text and building the search index..." [estimatedSeconds]="processingEstimateSeconds(doc)" />
+                </div>
+              }
+            </li>
+          }
+        </ul>
+      }
+    </div>
+  </main>
+</div>

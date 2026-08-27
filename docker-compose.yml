@@ -1,0 +1,80 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: factchecker-postgres
+    environment:
+      POSTGRES_DB: factchecker
+      POSTGRES_USER: ${DB_USERNAME:-factchecker}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-factchecker}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-factchecker} -d factchecker"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama
+    container_name: factchecker-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+
+  searxng:
+    image: searxng/searxng
+    container_name: factchecker-searxng
+    ports:
+      - "8888:8080"
+    volumes:
+      - ./searxng/settings.yml:/etc/searxng/settings.yml:ro
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    container_name: factchecker-backend
+    ports:
+      - "8080:8080"
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/factchecker
+      DB_USERNAME: ${DB_USERNAME:-factchecker}
+      DB_PASSWORD: ${DB_PASSWORD:-factchecker}
+      OLLAMA_BASE_URL: http://ollama:11434
+      SEARXNG_BASE_URL: http://searxng:8080
+      JWT_SECRET: ${JWT_SECRET:-change-this-to-a-random-64-byte-secret-in-your-env}
+    volumes:
+      - backend-uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+      searxng:
+        condition: service_started
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    container_name: factchecker-frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  ollama-data:
+  backend-uploads:
