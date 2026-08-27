@@ -13,6 +13,12 @@ RUN chmod +x mvnw && ./mvnw -B clean package -DskipTests
 FROM eclipse-temurin:21-jre
 WORKDIR /app
 
+# LibreOffice Writer (not the full suite) headlessly converts uploaded DOC/DOCX files to PDF
+# before the rest of the pipeline ever sees them - see DocumentConversionService.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libreoffice-writer \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY --from=build /app/target/*.jar app.jar
 
 RUN mkdir -p /app/data /app/uploads

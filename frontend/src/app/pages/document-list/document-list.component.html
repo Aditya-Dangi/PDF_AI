@@ -18,13 +18,19 @@
       (dragover)="onDragOver($event)"
       (dragleave)="onDragLeave()"
     >
-      <p class="text-sm text-muted mb-3">Drag and drop a PDF here, or</p>
+      <p class="text-sm text-muted mb-3">Drag and drop a PDF or Word document here, or</p>
       <label
         class="inline-block bg-accent text-white text-sm font-medium rounded-lg px-4 py-2 cursor-pointer transition-all duration-150 hover:bg-accent-hover active:scale-95"
         [class.opacity-50]="uploading()"
       >
-        Choose PDF
-        <input type="file" accept="application/pdf" class="hidden" (change)="onFileSelected($event)" [disabled]="uploading()" />
+        Choose File
+        <input
+          type="file"
+          accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          class="hidden"
+          (change)="onFileSelected($event)"
+          [disabled]="uploading()"
+        />
       </label>
 
       @if (uploading()) {

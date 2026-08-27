@@ -67,10 +67,9 @@ public class DocumentService {
         }
         String contentType = file.getContentType();
         String originalFilename = file.getOriginalFilename();
-        boolean looksLikePdf = "application/pdf".equals(contentType)
-                || (originalFilename != null && originalFilename.toLowerCase().endsWith(".pdf"));
-        if (!looksLikePdf) {
-            throw new BadRequestException("Only PDF files are supported.");
+        String extension = detectSupportedExtension(contentType, originalFilename);
+        if (extension == null) {
+            throw new BadRequestException("Only PDF, DOC, and DOCX files are supported.");
         }
 
         String documentId = UUID.randomUUID().toString();
@@ -78,7 +77,9 @@ public class DocumentService {
         try {
             Path userDir = Path.of(appProperties.getUploadDir(), userId);
             Files.createDirectories(userDir);
-            Path target = userDir.resolve(documentId + ".pdf");
+            // Kept in its original format here - non-PDF files are converted to PDF by
+            // PdfProcessingService before extraction (see DocumentConversionService).
+            Path target = userDir.resolve(documentId + extension);
             file.transferTo(target);
 
             Document document = new Document();
@@ -96,6 +97,24 @@ public class DocumentService {
             log.error("Failed to store uploaded file for user {}: {}", userId, ex.getMessage());
             throw new BadRequestException("Failed to store the uploaded file.");
         }
+    }
+
+    /** Returns the extension (with leading dot) to store the file under, or null if the file
+     *  isn't a supported type. Checked by content-type first, falling back to the filename
+     *  extension since browsers/clients don't always send an accurate content-type. */
+    private String detectSupportedExtension(String contentType, String filename) {
+        String lowerName = filename != null ? filename.toLowerCase() : "";
+        if ("application/pdf".equals(contentType) || lowerName.endsWith(".pdf")) {
+            return ".pdf";
+        }
+        if ("application/vnd.openxmlformats-officedocument.wordprocessingml.document".equals(contentType)
+                || lowerName.endsWith(".docx")) {
+            return ".docx";
+        }
+        if ("application/msword".equals(contentType) || lowerName.endsWith(".doc")) {
+            return ".doc";
+        }
+        return null;
     }
 
     public List<Document> list(String userId) {

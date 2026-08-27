@@ -7,6 +7,7 @@ import com.factchecker.domain.DocumentStatus;
 import com.factchecker.embedding.EmbeddingService;
 import com.factchecker.pdf.ChunkBuilder;
 import com.factchecker.pdf.ChunkCandidate;
+import com.factchecker.pdf.DocumentConversionService;
 import com.factchecker.pdf.ExtractedLine;
 import com.factchecker.pdf.ExtractedPage;
 import com.factchecker.pdf.OcrService;
@@ -21,6 +22,8 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,17 +45,20 @@ public class PdfProcessingService {
     private final OcrService ocrService;
     private final ChunkBuilder chunkBuilder;
     private final EmbeddingService embeddingService;
+    private final DocumentConversionService documentConversionService;
     private final JsonUtil jsonUtil;
 
     public PdfProcessingService(DocumentRepository documentRepository, ChunkRepository chunkRepository,
                                  PdfTextExtractor pdfTextExtractor, OcrService ocrService, ChunkBuilder chunkBuilder,
-                                 EmbeddingService embeddingService, JsonUtil jsonUtil) {
+                                 EmbeddingService embeddingService, DocumentConversionService documentConversionService,
+                                 JsonUtil jsonUtil) {
         this.documentRepository = documentRepository;
         this.chunkRepository = chunkRepository;
         this.pdfTextExtractor = pdfTextExtractor;
         this.ocrService = ocrService;
         this.chunkBuilder = chunkBuilder;
         this.embeddingService = embeddingService;
+        this.documentConversionService = documentConversionService;
         this.jsonUtil = jsonUtil;
     }
 
@@ -65,7 +71,17 @@ public class PdfProcessingService {
         }
 
         try {
-            List<ExtractedPage> pages = extractAllPages(document.getStoragePath());
+            String storagePath = document.getStoragePath();
+            if (documentConversionService.needsConversion(storagePath)) {
+                Path original = Path.of(storagePath);
+                Path converted = documentConversionService.convertToPdf(original);
+                Files.deleteIfExists(original);
+                storagePath = converted.toAbsolutePath().toString();
+                document.setStoragePath(storagePath);
+                documentRepository.save(document);
+            }
+
+            List<ExtractedPage> pages = extractAllPages(storagePath);
             document.setPageCount(pages.size());
             // Persisted immediately (rather than only at the end) so the page count is visible to
             // the frontend - which uses it to estimate remaining processing time - while the

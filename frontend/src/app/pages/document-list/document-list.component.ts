@@ -71,9 +71,13 @@ export class DocumentListComponent implements OnInit, OnDestroy {
     this.dragging.set(false);
   }
 
+  private static readonly SUPPORTED_EXTENSIONS = ['.pdf', '.doc', '.docx'];
+
   upload(file: File): void {
-    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
-      this.error.set('Only PDF files are supported.');
+    const name = file.name.toLowerCase();
+    const supported = DocumentListComponent.SUPPORTED_EXTENSIONS.some((ext) => name.endsWith(ext));
+    if (!supported) {
+      this.error.set('Only PDF, DOC, and DOCX files are supported.');
       return;
     }
     this.error.set(null);
