@@ -29,7 +29,14 @@ export function estimateAuditSeconds(pageCount: number): number {
 
 /** Ingestion (parse -> OCR fallback -> chunk -> batch-embed) scales with page count; pageCount is
  *  0 until the backend finishes extracting text, so this falls back to a flat estimate until then.
- *  Measured ~44s end-to-end for a real 117-page/864-chunk document on GPU-batched embedding. */
-export function estimateProcessingSeconds(pageCount: number): number {
-  return pageCount > 0 ? Math.max(10, Math.round(pageCount * 0.5)) : 15;
+ *  Measured ~44s end-to-end for a real 117-page/864-chunk PDF on GPU-batched embedding.
+ *
+ *  DOC/DOCX uploads add a LibreOffice conversion step *before* extraction even starts, so pageCount
+ *  can stay at 0 for a while - long enough that the flat fallback below badly undersold the wait
+ *  and let the bar sit at its cap for minutes. fileSizeBytes (known instantly, at upload time) is
+ *  used as a rough stand-in for that whole window when the real page count isn't known yet. */
+export function estimateProcessingSeconds(pageCount: number, fileSizeBytes?: number): number {
+  if (pageCount > 0) return Math.max(10, Math.round(pageCount * 0.5));
+  if (fileSizeBytes) return Math.max(20, Math.round((fileSizeBytes / (1024 * 1024)) * 12));
+  return 20;
 }

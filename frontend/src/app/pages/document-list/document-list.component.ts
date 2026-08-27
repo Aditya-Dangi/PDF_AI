@@ -23,6 +23,10 @@ export class DocumentListComponent implements OnInit, OnDestroy {
   dragging = signal(false);
 
   private pollHandle: ReturnType<typeof setInterval> | null = null;
+  /** File size isn't part of DocumentSummary (the backend doesn't persist it), so it's only known
+   *  for documents uploaded in this browser session - used to seed a much better time estimate
+   *  than the flat fallback while pageCount is still unknown (e.g. during DOCX conversion). */
+  private uploadedFileSizes = new Map<string, number>();
 
   constructor(
     private documentService: DocumentService,
@@ -83,8 +87,9 @@ export class DocumentListComponent implements OnInit, OnDestroy {
     this.error.set(null);
     this.uploading.set(true);
     this.documentService.upload(file).subscribe({
-      next: () => {
+      next: (doc) => {
         this.uploading.set(false);
+        this.uploadedFileSizes.set(doc.id, file.size);
         this.refresh();
       },
       error: (err) => {
@@ -122,7 +127,7 @@ export class DocumentListComponent implements OnInit, OnDestroy {
   }
 
   processingEstimateSeconds(doc: DocumentSummary): number {
-    return estimateProcessingSeconds(doc.pageCount);
+    return estimateProcessingSeconds(doc.pageCount, this.uploadedFileSizes.get(doc.id));
   }
 
   statusBadgeClass(doc: DocumentSummary): string {

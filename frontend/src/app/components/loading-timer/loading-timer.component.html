@@ -8,10 +8,12 @@
         ></div>
       </div>
     }
-    <div class="flex items-center gap-2.5 text-sm text-muted">
-      <div class="w-3.5 h-3.5 border-2 border-line border-t-accent rounded-full animate-spin shrink-0"></div>
-      <span>{{ label }}</span>
-      <span class="text-xs text-muted tabular-nums">
+    <div class="flex items-center flex-wrap gap-x-2.5 gap-y-1 text-sm text-muted">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <div class="w-3.5 h-3.5 border-2 border-line border-t-accent rounded-full animate-spin shrink-0"></div>
+        <span>{{ label }}</span>
+      </div>
+      <span class="text-xs text-muted tabular-nums whitespace-nowrap">
         ({{ formattedTime() }}@if (formattedEstimate(); as est) { <span> / ~{{ est }} est.</span> })
       </span>
     </div>
