@@ -1,0 +1,58 @@
+name: CI
+
+# Runs on every push and pull request - builds and tests both apps. This is CI only (no
+# deployment yet): it catches broken code before it merges, but doesn't push anywhere. Once a
+# hosting target is chosen, a CD job can be added here to build/push Docker images and deploy.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    name: Backend (build + test)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: "temurin"
+          cache: maven
+
+      - name: Build and run tests
+        # The prompt eval suite (tag "eval") needs a real Ollama/SearXNG instance and is excluded
+        # from this by default (see backend/pom.xml's surefire config) - this runs the normal,
+        # fast, fully self-contained test suite only.
+        run: ./mvnw -B test
+
+  frontend:
+    name: Frontend (build + test)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npx ng test --watch=false --browsers=ChromeHeadless
+
+      - name: Production build
+        run: npx ng build --configuration production
