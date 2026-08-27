@@ -1,6 +1,7 @@
 package com.factchecker.controller;
 
 import com.factchecker.domain.Document;
+import com.factchecker.dto.AnswerMode;
 import com.factchecker.dto.AnswerResponse;
 import com.factchecker.dto.AskRequest;
 import com.factchecker.dto.FactCheckRequest;
@@ -60,7 +61,7 @@ public class ConversationController {
                                     @RequestParam("image") MultipartFile image) throws IOException {
         Document document = documentService.get(user.id(), documentId);
         String queryText = imageQueryService.resolveQueryText(image.getBytes());
-        return conversationService.ask(document, user.id(), new AskRequest(queryText));
+        return conversationService.ask(document, user.id(), new AskRequest(queryText, AnswerMode.FAST));
     }
 
     /** "Summarize" from the PDF selection toolbar, for a dragged image region - resolves the image

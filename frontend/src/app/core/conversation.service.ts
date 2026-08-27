@@ -2,14 +2,14 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { API_BASE_URL } from './api-config';
-import { AnswerResponse, ChatMessage, FactCheckResponse, SummaryResponse } from './models';
+import { AnswerMode, AnswerResponse, ChatMessage, FactCheckResponse, SummaryResponse } from './models';
 
 @Injectable({ providedIn: 'root' })
 export class ConversationService {
   constructor(private http: HttpClient) {}
 
-  ask(documentId: string, question: string): Observable<AnswerResponse> {
-    return this.http.post<AnswerResponse>(`${API_BASE_URL}/documents/${documentId}/ask`, { question });
+  ask(documentId: string, question: string, mode: AnswerMode = 'FAST'): Observable<AnswerResponse> {
+    return this.http.post<AnswerResponse>(`${API_BASE_URL}/documents/${documentId}/ask`, { question, mode });
   }
 
   factCheckMessage(documentId: string, messageId: string): Observable<FactCheckResponse> {

@@ -41,6 +41,26 @@ export class AnswerCardComponent {
   @Output() decomposeRequested = new EventEmitter<void>();
   @Output() challengeRequested = new EventEmitter<Claim>();
 
+  /** Explains why deep research stopped where it did, so a short run doesn't look like a glitch. */
+  researchTooltip(): string {
+    switch (this.answer.stopReason) {
+      case 'COMPLETE':
+        return 'Stopped because the answer was judged complete.';
+      case 'ROUND_CAP':
+        return 'Stopped at the maximum number of research rounds.';
+      case 'TIME_BUDGET':
+        return 'Stopped at the time limit for the whole request; this answer may be partial.';
+      case 'NO_NEW_EVIDENCE':
+        return 'Stopped because the document had no further relevant passages to add.';
+      case 'GAP_ANALYSIS_UNAVAILABLE':
+        return 'Stopped early because the follow-up analysis was unavailable; this is the best answer produced so far.';
+      case 'INSUFFICIENT_CONTEXT':
+        return 'Stopped because the document did not contain enough relevant material.';
+      default:
+        return 'Answered using multi-round deep research.';
+    }
+  }
+
   verdictLabel(v: string): string {
     return VERDICT_LABELS[v] ?? v;
   }

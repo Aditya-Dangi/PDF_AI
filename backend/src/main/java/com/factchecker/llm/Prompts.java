@@ -206,4 +206,34 @@ public final class Prompts {
     public static String summarizeUserPrompt(String text) {
         return "TEXT TO SUMMARIZE:\n" + text;
     }
+
+    /**
+     * Drives one round of Quality mode's research loop (see DeepResearchService): given the question
+     * and the answer drafted so far, decide whether anything is still missing and, if so, what to go
+     * looking for next.
+     */
+    public static final String GAP_ANALYSIS_SYSTEM = """
+            You are reviewing a draft answer to decide whether it still needs more evidence from the
+            document, as one step of an iterative research process.
+            - Set "complete" to true when the draft already answers the question as fully as the
+              question actually asks. Do not demand more detail than was asked for; a question with
+              a short, direct answer is complete once that answer is given.
+            - Set "complete" to false ONLY when a specific, identifiable part of the question is
+              genuinely unanswered or unsupported by the evidence so far.
+            - When "complete" is false, "missingQuery" must be a short search phrase describing the
+              missing information, phrased to match wording likely to appear in the document itself
+              (not a question, and not a restatement of the original question).
+            - When "complete" is true, "missingQuery" must be an empty string.
+            - Respond with ONLY a JSON object of this exact shape, no markdown fences:
+              {"complete": boolean, "missingQuery": string}
+            """;
+
+    public static String gapAnalysisUserPrompt(String question, String draftAnswer) {
+        return """
+                ORIGINAL QUESTION: %s
+
+                DRAFT ANSWER SO FAR:
+                %s
+                """.formatted(question, draftAnswer);
+    }
 }

@@ -44,6 +44,11 @@
         @if (answer.durationMs | duration; as duration) {
           <span class="text-xs text-muted" title="How long this answer took to generate">⏱ Answered in {{ duration }}</span>
         }
+        @if (answer.mode === 'QUALITY') {
+          <span class="text-xs text-accent" [title]="researchTooltip()">
+            🔬 Deep research · {{ answer.researchRounds }} {{ answer.researchRounds === 1 ? 'round' : 'rounds' }}
+          </span>
+        }
       </div>
 
       <div class="flex flex-wrap gap-2">

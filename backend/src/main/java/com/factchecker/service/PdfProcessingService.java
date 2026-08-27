@@ -8,23 +8,17 @@ import com.factchecker.embedding.EmbeddingService;
 import com.factchecker.pdf.ChunkBuilder;
 import com.factchecker.pdf.ChunkCandidate;
 import com.factchecker.pdf.DocumentConversionService;
-import com.factchecker.pdf.ExtractedLine;
 import com.factchecker.pdf.ExtractedPage;
-import com.factchecker.pdf.OcrService;
-import com.factchecker.pdf.PdfTextExtractor;
+import com.factchecker.pdf.PageExtractor;
 import com.factchecker.repository.ChunkRepository;
 import com.factchecker.repository.DocumentRepository;
-import org.apache.pdfbox.Loader;
-import org.apache.pdfbox.pdmodel.PDDocument;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -41,21 +35,19 @@ public class PdfProcessingService {
 
     private final DocumentRepository documentRepository;
     private final ChunkRepository chunkRepository;
-    private final PdfTextExtractor pdfTextExtractor;
-    private final OcrService ocrService;
+    private final PageExtractor pageExtractor;
     private final ChunkBuilder chunkBuilder;
     private final EmbeddingService embeddingService;
     private final DocumentConversionService documentConversionService;
     private final JsonUtil jsonUtil;
 
     public PdfProcessingService(DocumentRepository documentRepository, ChunkRepository chunkRepository,
-                                 PdfTextExtractor pdfTextExtractor, OcrService ocrService, ChunkBuilder chunkBuilder,
+                                 PageExtractor pageExtractor, ChunkBuilder chunkBuilder,
                                  EmbeddingService embeddingService, DocumentConversionService documentConversionService,
                                  JsonUtil jsonUtil) {
         this.documentRepository = documentRepository;
         this.chunkRepository = chunkRepository;
-        this.pdfTextExtractor = pdfTextExtractor;
-        this.ocrService = ocrService;
+        this.pageExtractor = pageExtractor;
         this.chunkBuilder = chunkBuilder;
         this.embeddingService = embeddingService;
         this.documentConversionService = documentConversionService;
@@ -81,7 +73,7 @@ public class PdfProcessingService {
                 documentRepository.save(document);
             }
 
-            List<ExtractedPage> pages = extractAllPages(storagePath);
+            List<ExtractedPage> pages = pageExtractor.extractAllPages(storagePath);
             document.setPageCount(pages.size());
             // Persisted immediately (rather than only at the end) so the page count is visible to
             // the frontend - which uses it to estimate remaining processing time - while the
@@ -128,27 +120,6 @@ public class PdfProcessingService {
             document.setFailureReason(safeMessage(ex));
             documentRepository.save(document);
         }
-    }
-
-    private List<ExtractedPage> extractAllPages(String storagePath) throws Exception {
-        List<ExtractedPage> pages = new ArrayList<>();
-
-        try (PDDocument document = Loader.loadPDF(new File(storagePath))) {
-            int pageCount = document.getNumberOfPages();
-
-            for (int i = 0; i < pageCount; i++) {
-                ExtractedPage page = pdfTextExtractor.extractPage(document, i);
-
-                if (!pdfTextExtractor.hasMeaningfulText(page)) {
-                    List<ExtractedLine> ocrLines = ocrService.ocrPage(document, i, i + 1);
-                    page = new ExtractedPage(page.pageNumber(), page.width(), page.height(), ocrLines);
-                }
-
-                pages.add(page);
-            }
-        }
-
-        return pages;
     }
 
     private String safeMessage(Throwable ex) {

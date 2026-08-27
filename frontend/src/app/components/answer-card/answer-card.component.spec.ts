@@ -24,7 +24,10 @@ describe('AnswerCardComponent', () => {
         similarity: 0.6235
       }
     ],
-    durationMs: 4200
+    durationMs: 4200,
+    mode: 'FAST',
+    researchRounds: null,
+    stopReason: null
   };
 
   beforeEach(async () => {

@@ -57,7 +57,11 @@ public class OcrService {
                         box.y * POINTS_PER_PIXEL,
                         box.width * POINTS_PER_PIXEL,
                         box.height * POINTS_PER_PIXEL,
-                        true
+                        true,
+                        // Tesseract reports no font metrics; 0/false marks these as "unknown", which
+                        // DocumentStructureService treats as body text rather than guessing headings.
+                        0,
+                        false
                 ));
             }
         } catch (Throwable ex) {

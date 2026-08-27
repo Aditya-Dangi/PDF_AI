@@ -75,6 +75,30 @@
     </div>
 
     <div class="w-1/2 flex flex-col min-h-0 border-l border-line">
+      <div class="flex items-center gap-1 px-4 py-2 border-b border-line shrink-0">
+        <button
+          (click)="rightPane.set('ai')"
+          class="text-xs font-medium rounded-md px-3 py-1.5 transition-colors duration-150"
+          [class]="rightPane() === 'ai' ? 'bg-accent text-white' : 'text-muted hover:text-ink hover:bg-surface-alt'"
+        >
+          💬 AI
+        </button>
+        <button
+          (click)="rightPane.set('text')"
+          class="text-xs font-medium rounded-md px-3 py-1.5 transition-colors duration-150"
+          [class]="rightPane() === 'text' ? 'bg-accent text-white' : 'text-muted hover:text-ink hover:bg-surface-alt'"
+        >
+          📄 Text
+        </button>
+      </div>
+
+      @if (rightPane() === 'text') {
+        <app-document-text-pane
+          [documentId]="document()!.id"
+          (blockSelected)="onBlockSelected($event)"
+          class="flex-1 min-h-0 block"
+        />
+      } @else {
       <div class="flex-1 overflow-y-auto p-4 space-y-4">
         @if (document()?.status === 'PROCESSING') {
           <div class="border border-line bg-surface rounded-xl p-4 animate-fade-in-up">
@@ -174,7 +198,10 @@
                           retrievalConfidence: 100,
                           fidelityConfidence: 100,
                           evidence: [],
-                          durationMs: null
+                          durationMs: null,
+                          mode: null,
+                          researchRounds: null,
+                          stopReason: null
                         }"
                         [factCheck]="entry.factCheck"
                       />
@@ -224,7 +251,32 @@
             <app-loading-timer [active]="summarizing()" label="Summarizing the selection..." [estimatedSeconds]="askEstimateSeconds" />
           </div>
         }
+
+        <div class="flex items-center gap-2 mt-2">
+          <div class="inline-flex rounded-full border border-line overflow-hidden">
+            <button
+              (click)="answerMode.set('FAST')"
+              class="text-xs font-medium px-3 py-1 transition-colors duration-150"
+              [class]="answerMode() === 'FAST' ? 'bg-accent text-white' : 'text-muted hover:text-ink'"
+              title="One pass - fastest"
+            >
+              Fast
+            </button>
+            <button
+              (click)="answerMode.set('QUALITY')"
+              class="text-xs font-medium px-3 py-1 transition-colors duration-150"
+              [class]="answerMode() === 'QUALITY' ? 'bg-accent text-white' : 'text-muted hover:text-ink'"
+              title="Researches in several rounds, filling gaps - slower, more thorough"
+            >
+              Quality
+            </button>
+          </div>
+          @if (answerMode() === 'QUALITY') {
+            <span class="text-xs text-muted">Researches in up to 3 rounds - noticeably slower.</span>
+          }
+        </div>
       </div>
+      }
     </div>
   </div>
 </div>

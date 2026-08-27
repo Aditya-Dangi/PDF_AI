@@ -10,6 +10,8 @@ import com.factchecker.exception.ResourceNotFoundException;
 import com.factchecker.repository.AnswerRepository;
 import com.factchecker.repository.ChatMessageRepository;
 import com.factchecker.repository.ChunkRepository;
+import com.factchecker.repository.DocumentStructureRepository;
+import com.factchecker.repository.SummaryRepository;
 import com.factchecker.repository.ClaimRepository;
 import com.factchecker.repository.ConversationRepository;
 import com.factchecker.repository.DocumentRepository;
@@ -34,6 +36,8 @@ public class DocumentService {
 
     private final DocumentRepository documentRepository;
     private final ChunkRepository chunkRepository;
+    private final SummaryRepository summaryRepository;
+    private final DocumentStructureRepository documentStructureRepository;
     private final ConversationRepository conversationRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final AnswerRepository answerRepository;
@@ -42,13 +46,16 @@ public class DocumentService {
     private final PdfProcessingService pdfProcessingService;
     private final AppProperties appProperties;
 
-    public DocumentService(DocumentRepository documentRepository, ChunkRepository chunkRepository,
+    public DocumentService(DocumentRepository documentRepository, ChunkRepository chunkRepository, SummaryRepository summaryRepository,
+                            DocumentStructureRepository documentStructureRepository,
                             ConversationRepository conversationRepository, ChatMessageRepository chatMessageRepository,
                             AnswerRepository answerRepository, FactCheckRepository factCheckRepository,
                             ClaimRepository claimRepository, PdfProcessingService pdfProcessingService,
                             AppProperties appProperties) {
         this.documentRepository = documentRepository;
         this.chunkRepository = chunkRepository;
+        this.summaryRepository = summaryRepository;
+        this.documentStructureRepository = documentStructureRepository;
         this.conversationRepository = conversationRepository;
         this.chatMessageRepository = chatMessageRepository;
         this.answerRepository = answerRepository;
@@ -136,6 +143,7 @@ public class DocumentService {
             for (ChatMessage message : messages) {
                 answerRepository.findByMessageId(message.getId()).ifPresent(answerRepository::delete);
                 factCheckRepository.findByMessageId(message.getId()).ifPresent(factCheckRepository::delete);
+                summaryRepository.deleteByMessageId(message.getId());
                 chatMessageRepository.delete(message);
             }
             conversationRepository.delete(conversation);
@@ -143,6 +151,7 @@ public class DocumentService {
 
         chunkRepository.deleteByDocumentId(documentId);
         claimRepository.deleteByDocumentId(documentId);
+        documentStructureRepository.deleteByDocumentId(documentId);
 
         try {
             Files.deleteIfExists(Path.of(document.getStoragePath()));

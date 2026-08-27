@@ -40,7 +40,14 @@ export interface AnswerResponse {
   fidelityConfidence: number;
   evidence: Evidence[];
   durationMs: number | null;
+  /** FAST or QUALITY. Null on answers written before Quality mode existed. */
+  mode: AnswerMode | null;
+  /** Rounds the Quality research loop ran, and why it stopped. Null for FAST answers. */
+  researchRounds: number | null;
+  stopReason: string | null;
 }
+
+export type AnswerMode = 'FAST' | 'QUALITY';
 
 export type Verdict =
   | 'SUPPORTED'
@@ -69,6 +76,23 @@ export interface FactCheckResponse {
   summary: string;
   sources: Source[];
   durationMs: number | null;
+}
+
+export type BlockType = 'HEADING' | 'PARAGRAPH' | 'LIST_ITEM' | 'HEADER_FOOTER';
+
+export interface DocumentBlock {
+  page: number;
+  type: BlockType;
+  headingLevel: number;
+  text: string;
+  rects: Rect[];
+}
+
+/** The document's extracted content for the Text pane - both renderings in one response so
+ *  switching Markdown/JSON tabs costs no extra request. */
+export interface StructureResponse {
+  markdown: string;
+  blocks: DocumentBlock[];
 }
 
 /** A plain summary of a selected passage or image region - deliberately separate from

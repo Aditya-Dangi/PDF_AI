@@ -50,6 +50,14 @@ public class Answer {
      *  existed - the frontend just omits the badge when it's null. */
     private Long durationMs;
 
+    /** FAST or QUALITY. Nullable so rows written before Quality mode existed load unchanged; the
+     *  UI simply shows no research badge for them. */
+    private String mode;
+
+    /** Rounds the Quality loop actually ran, and why it stopped. Null for FAST answers. */
+    private Integer researchRounds;
+    private String stopReason;
+
     @Column(nullable = false)
     private Instant createdAt = Instant.now();
 }

@@ -9,7 +9,9 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Extracts per-line text with bounding boxes (page point space, top-left origin, y-down) from a
@@ -61,6 +63,15 @@ public class PdfTextExtractor {
             super();
         }
 
+        /** PDFs have no reliable weight flag, so this reads the font's own name - the convention
+         *  every real-world PDF follows (e.g. "ABCDEF+Helvetica-Bold", "Arial,BoldMT"). Falls back
+         *  to false rather than guessing when the font or its name is unavailable. */
+        private static boolean isBold(TextPosition tp) {
+            if (tp.getFont() == null || tp.getFont().getName() == null) return false;
+            String name = tp.getFont().getName().toLowerCase();
+            return name.contains("bold") || name.contains("black") || name.contains("heavy");
+        }
+
         @Override
         protected void writeString(String text, List<TextPosition> textPositions) {
             if (text == null || text.isBlank() || textPositions.isEmpty()) return;
@@ -69,6 +80,12 @@ public class PdfTextExtractor {
             double minY = Double.MAX_VALUE;
             double maxX = -Double.MAX_VALUE;
             double maxY = -Double.MAX_VALUE;
+            // Font size and weight are taken from the line's most common glyph rather than its
+            // first: a heading that starts with a bullet, quote mark, or drop cap would otherwise
+            // report that decoration's size instead of the heading's own.
+            Map<Long, Integer> sizeCounts = new HashMap<>();
+            int boldGlyphs = 0;
+            int totalGlyphs = 0;
 
             for (TextPosition tp : textPositions) {
                 double x = tp.getXDirAdj();
@@ -80,7 +97,20 @@ public class PdfTextExtractor {
                 minY = Math.min(minY, y);
                 maxX = Math.max(maxX, x + w);
                 maxY = Math.max(maxY, y + h);
+
+                if (tp.getUnicode() == null || tp.getUnicode().isBlank()) continue;
+                totalGlyphs++;
+                // Rounded to 1dp so trivial sub-point rendering differences within one visual line
+                // don't split into separate "sizes" and defeat the most-common vote.
+                long sizeKey = Math.round(tp.getFontSizeInPt() * 10);
+                sizeCounts.merge(sizeKey, 1, Integer::sum);
+                if (isBold(tp)) boldGlyphs++;
             }
+
+            double fontSize = sizeCounts.entrySet().stream()
+                    .max(Map.Entry.comparingByValue())
+                    .map(e -> e.getKey() / 10.0)
+                    .orElse(0.0);
 
             lines.add(new ExtractedLine(
                     currentPageNumber,
@@ -89,7 +119,9 @@ public class PdfTextExtractor {
                     minY,
                     maxX - minX,
                     maxY - minY,
-                    false
+                    false,
+                    fontSize,
+                    totalGlyphs > 0 && boldGlyphs * 2 > totalGlyphs
             ));
         }
     }

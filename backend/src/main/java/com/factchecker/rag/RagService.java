@@ -64,7 +64,18 @@ public class RagService {
     }
 
     public RagResult answer(String documentId, String question) {
-        List<RetrievedChunk> ranked = retrieveTopChunks(documentId, question);
+        return answerWithContext(question, retrieveTopChunks(documentId, question));
+    }
+
+    /**
+     * The answering half of {@link #answer}, over evidence that has already been retrieved.
+     *
+     * <p>Separated so Quality mode (see DeepResearchService) can accumulate evidence across several
+     * retrieval rounds and re-answer against everything gathered so far, without duplicating the
+     * prompt, parsing, and fidelity-scoring logic - Fast and Quality therefore answer through
+     * exactly the same code path and cannot drift apart.
+     */
+    public RagResult answerWithContext(String question, List<RetrievedChunk> ranked) {
         if (ranked.isEmpty()) {
             return new RagResult(
                     "This document has no extractable text yet.",

@@ -6,10 +6,11 @@ import { firstValueFrom } from 'rxjs';
 import { DocumentService } from '../../core/document.service';
 import { ConversationService } from '../../core/conversation.service';
 import { ClaimService } from '../../core/claim.service';
-import { AnswerResponse, ChatMessage, Claim, DocumentSummary, Evidence, FactCheckResponse, Rect, SummaryResponse } from '../../core/models';
+import { AnswerMode, AnswerResponse, ChatMessage, Claim, DocumentBlock, DocumentSummary, Evidence, FactCheckResponse, Rect, SummaryResponse } from '../../core/models';
 import { PdfViewerComponent } from '../../components/pdf-viewer/pdf-viewer.component';
 import { AnswerCardComponent } from '../../components/answer-card/answer-card.component';
 import { SummaryCardComponent } from '../../components/summary-card/summary-card.component';
+import { DocumentTextPaneComponent } from '../../components/document-text-pane/document-text-pane.component';
 import { AuditPanelComponent } from '../../components/audit-panel/audit-panel.component';
 import { LoadingTimerComponent } from '../../components/loading-timer/loading-timer.component';
 import { ThemeToggleComponent } from '../../components/theme-toggle/theme-toggle.component';
@@ -51,6 +52,7 @@ type TimelineEntry = AnswerTimelineEntry | SummaryTimelineEntry | FactCheckTimel
     PdfViewerComponent,
     AnswerCardComponent,
     SummaryCardComponent,
+    DocumentTextPaneComponent,
     AuditPanelComponent,
     LoadingTimerComponent,
     ThemeToggleComponent
@@ -71,6 +73,11 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
 
   question = '';
   asking = signal(false);
+  /** Fast = one pass (today's behavior). Quality = iterative gap-filling research; slower, and
+   *  bounded server-side by DeepResearchService's stop conditions. */
+  answerMode = signal<AnswerMode>('FAST');
+  /** Right pane: the AI conversation, or the document's extracted text. */
+  rightPane = signal<'ai' | 'text'>('ai');
   summarizing = signal(false);
 
   claimText = '';
@@ -174,7 +181,7 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
     if (!q || this.asking()) return;
 
     this.asking.set(true);
-    this.conversationService.ask(this.documentId, q).subscribe({
+    this.conversationService.ask(this.documentId, q, this.answerMode()).subscribe({
       next: (answer) => {
         this.asking.set(false);
         this.question = '';
@@ -481,6 +488,13 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
       },
       error: (err) => this.loadError.set(err?.error?.message ?? 'Failed to clear messages.')
     });
+  }
+
+  /** A block clicked in the Text pane highlights on the PDF through the same overlay path as
+   *  answer evidence - one highlight mechanism, not two. */
+  onBlockSelected(block: DocumentBlock): void {
+    this.targetPage.set(block.page);
+    this.targetRects.set(block.rects);
   }
 
   onEvidenceSelected(evidence: Evidence): void {

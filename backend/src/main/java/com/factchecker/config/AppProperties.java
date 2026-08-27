@@ -14,6 +14,7 @@ public class AppProperties {
     private Ollama ollama = new Ollama();
     private Ocr ocr = new Ocr();
     private RateLimit rateLimit = new RateLimit();
+    private DeepResearch deepResearch = new DeepResearch();
 
     public String getUploadDir() { return uploadDir; }
     public void setUploadDir(String uploadDir) { this.uploadDir = uploadDir; }
@@ -35,6 +36,9 @@ public class AppProperties {
 
     public RateLimit getRateLimit() { return rateLimit; }
     public void setRateLimit(RateLimit rateLimit) { this.rateLimit = rateLimit; }
+
+    public DeepResearch getDeepResearch() { return deepResearch; }
+    public void setDeepResearch(DeepResearch deepResearch) { this.deepResearch = deepResearch; }
 
     public static class Jwt {
         private String secret;
@@ -84,6 +88,20 @@ public class AppProperties {
 
         public String getTessdataPath() { return tessdataPath; }
         public void setTessdataPath(String tessdataPath) { this.tessdataPath = tessdataPath; }
+    }
+
+    /** Bounds on Quality mode's research loop - see DeepResearchService. Configurable rather than
+     *  hardcoded because the right ceiling depends entirely on the deployment's hardware: these
+     *  defaults are tuned for a local 8B model where a single pass costs seconds, not milliseconds. */
+    public static class DeepResearch {
+        private int maxRounds = 3;
+        /** Wall-clock budget for the whole request, not per round. */
+        private long timeBudgetMs = 180_000;
+
+        public int getMaxRounds() { return maxRounds; }
+        public void setMaxRounds(int maxRounds) { this.maxRounds = maxRounds; }
+        public long getTimeBudgetMs() { return timeBudgetMs; }
+        public void setTimeBudgetMs(long timeBudgetMs) { this.timeBudgetMs = timeBudgetMs; }
     }
 
     /** Requests allowed per minute, per user (or IP if unauthenticated) - see RateLimitFilter. */

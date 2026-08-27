@@ -11,6 +11,9 @@ public record AnswerResponse(
         double retrievalConfidence,
         double fidelityConfidence,
         List<EvidenceDto> evidence,
-        Long durationMs
+        Long durationMs,
+        String mode,
+        Integer researchRounds,
+        String stopReason
 ) {
 }

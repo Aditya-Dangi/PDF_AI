@@ -118,8 +118,8 @@ class ChunkBuilderTest {
     @Test
     void ocrFlagIsTrueIfAnyContributingLineWasOcrSourced() {
         ExtractedPage page = new ExtractedPage(1, 612, 792, List.of(
-                new ExtractedLine(1, "Native text.", 0, 0, 100, 10, false),
-                new ExtractedLine(1, "Scanned text.", 0, 15, 100, 10, true)
+                new ExtractedLine(1, "Native text.", 0, 0, 100, 10, false, 0, false),
+                new ExtractedLine(1, "Scanned text.", 0, 15, 100, 10, true, 0, false)
         ));
 
         List<ChunkCandidate> chunks = chunkBuilder.buildChunks(List.of(page));
@@ -131,7 +131,7 @@ class ChunkBuilderTest {
     @Test
     void rectsPreserveTheOriginalLineCoordinatesForHighlighting() {
         ExtractedPage page = new ExtractedPage(1, 612, 792, List.of(
-                new ExtractedLine(1, "Some text.", 44, 300, 220, 7, false)
+                new ExtractedLine(1, "Some text.", 44, 300, 220, 7, false, 0, false)
         ));
 
         List<ChunkCandidate> chunks = chunkBuilder.buildChunks(List.of(page));
@@ -144,6 +144,6 @@ class ChunkBuilderTest {
     }
 
     private ExtractedLine line(int page, String text, double y, double height) {
-        return new ExtractedLine(page, text, 0, y, 100, height, false);
+        return new ExtractedLine(page, text, 0, y, 100, height, false, 0, false);
     }
 }

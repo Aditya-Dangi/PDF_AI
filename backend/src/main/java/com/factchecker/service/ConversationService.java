@@ -9,6 +9,7 @@ import com.factchecker.domain.DocumentStatus;
 import com.factchecker.domain.FactCheck;
 import com.factchecker.domain.MessageRole;
 import com.factchecker.domain.Summary;
+import com.factchecker.dto.AnswerMode;
 import com.factchecker.dto.AnswerResponse;
 import com.factchecker.dto.AskRequest;
 import com.factchecker.dto.EvidenceDto;
@@ -22,6 +23,8 @@ import com.factchecker.exception.BadRequestException;
 import com.factchecker.exception.ResourceNotFoundException;
 import com.factchecker.factcheck.FactCheckResult;
 import com.factchecker.factcheck.FactCheckService;
+import com.factchecker.rag.DeepResearchResult;
+import com.factchecker.rag.DeepResearchService;
 import com.factchecker.rag.RagResult;
 import com.factchecker.rag.RagService;
 import com.factchecker.rag.RetrievedChunk;
@@ -45,13 +48,15 @@ public class ConversationService {
     private final FactCheckRepository factCheckRepository;
     private final SummaryRepository summaryRepository;
     private final RagService ragService;
+    private final DeepResearchService deepResearchService;
     private final FactCheckService factCheckService;
     private final SummarizationService summarizationService;
     private final JsonUtil jsonUtil;
 
     public ConversationService(ConversationRepository conversationRepository, ChatMessageRepository chatMessageRepository,
                                 AnswerRepository answerRepository, FactCheckRepository factCheckRepository,
-                                SummaryRepository summaryRepository, RagService ragService, FactCheckService factCheckService,
+                                SummaryRepository summaryRepository, RagService ragService,
+                                DeepResearchService deepResearchService, FactCheckService factCheckService,
                                 SummarizationService summarizationService, JsonUtil jsonUtil) {
         this.conversationRepository = conversationRepository;
         this.chatMessageRepository = chatMessageRepository;
@@ -59,6 +64,7 @@ public class ConversationService {
         this.factCheckRepository = factCheckRepository;
         this.summaryRepository = summaryRepository;
         this.ragService = ragService;
+        this.deepResearchService = deepResearchService;
         this.factCheckService = factCheckService;
         this.summarizationService = summarizationService;
         this.jsonUtil = jsonUtil;
@@ -71,8 +77,20 @@ public class ConversationService {
         Conversation conversation = getOrCreateConversation(document.getId(), userId);
         ChatMessage userMessage = saveUserMessage(conversation, request.question());
 
+        AnswerMode mode = request.modeOrDefault();
         long startedAt = System.currentTimeMillis();
-        RagResult result = ragService.answer(document.getId(), request.question());
+
+        RagResult result;
+        Integer researchRounds = null;
+        String stopReason = null;
+        if (mode == AnswerMode.QUALITY) {
+            DeepResearchResult deep = deepResearchService.research(document.getId(), request.question());
+            result = deep.result();
+            researchRounds = deep.rounds();
+            stopReason = deep.stopReason().name();
+        } else {
+            result = ragService.answer(document.getId(), request.question());
+        }
         long durationMs = System.currentTimeMillis() - startedAt;
 
         ChatMessage assistantMessage = saveAssistantMessage(conversation, userMessage, result.explanation());
@@ -88,6 +106,9 @@ public class ConversationService {
         answer.setFidelityConfidence(result.fidelityConfidence());
         answer.setEvidenceJson(jsonUtil.toJson(evidenceDtos));
         answer.setDurationMs(durationMs);
+        answer.setMode(mode.name());
+        answer.setResearchRounds(researchRounds);
+        answer.setStopReason(stopReason);
         answerRepository.save(answer);
 
         return new AnswerResponse(
@@ -99,7 +120,10 @@ public class ConversationService {
                 result.retrievalConfidence(),
                 result.fidelityConfidence(),
                 evidenceDtos,
-                durationMs
+                durationMs,
+                mode.name(),
+                researchRounds,
+                stopReason
         );
     }
 
@@ -267,7 +291,10 @@ public class ConversationService {
                         a.getRetrievalConfidence(),
                         a.getFidelityConfidence(),
                         jsonUtil.fromJson(a.getEvidenceJson(), new TypeReference<List<EvidenceDto>>() {}),
-                        a.getDurationMs()
+                        a.getDurationMs(),
+                        a.getMode(),
+                        a.getResearchRounds(),
+                        a.getStopReason()
                 ))
                 .orElse(null);
 
