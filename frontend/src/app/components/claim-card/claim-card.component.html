@@ -74,7 +74,7 @@
 
     <section>
       <h4 class="text-xs font-semibold uppercase tracking-wide text-muted mb-1">🧠 Why This Verdict</h4>
-      <p class="text-sm text-ink">{{ claim.rationale }}</p>
+      <div class="prose prose-sm dark:prose-invert max-w-none prose-headings:text-ink prose-a:text-accent prose-strong:text-ink" [innerHTML]="claim.rationale | markdown"></div>
     </section>
 
     <div class="flex flex-wrap gap-x-6 gap-y-2 pt-1 border-t border-line">

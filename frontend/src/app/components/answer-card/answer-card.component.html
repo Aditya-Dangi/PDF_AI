@@ -7,12 +7,12 @@
     @if (answer.insufficientContext) {
       <div class="bg-surface-alt border border-line rounded-lg p-4 text-sm text-muted">
         <p class="font-medium text-ink mb-1">📄 Not enough information</p>
-        <p>{{ answer.explanation }}</p>
+        <div class="prose prose-sm dark:prose-invert max-w-none prose-headings:text-ink prose-a:text-accent prose-strong:text-ink" [innerHTML]="answer.explanation | markdown"></div>
       </div>
     } @else {
       <section>
         <h3 class="text-xs font-semibold uppercase tracking-wide text-muted mb-1">📄 Document Claim</h3>
-        <p class="text-sm text-ink">{{ answer.documentClaim }}</p>
+        <div class="prose prose-sm dark:prose-invert max-w-none prose-headings:text-ink prose-a:text-accent prose-strong:text-ink" [innerHTML]="answer.documentClaim | markdown"></div>
       </section>
 
       @if (answer.evidence.length > 0) {
@@ -35,7 +35,7 @@
         <h3 class="text-xs font-semibold uppercase tracking-wide text-muted mb-1">
           🧠 AI Explanation <span class="normal-case font-normal text-muted/70">(may include general knowledge beyond the document)</span>
         </h3>
-        <p class="text-sm text-ink">{{ answer.explanation }}</p>
+        <div class="prose prose-sm dark:prose-invert max-w-none prose-headings:text-ink prose-a:text-accent prose-strong:text-ink prose-table:text-sm" [innerHTML]="answer.explanation | markdown"></div>
       </section>
 
       <div class="flex flex-wrap gap-x-6 gap-y-2 pt-1 border-t border-line">
@@ -70,7 +70,7 @@
         <div class="pt-3 border-t border-line space-y-3 animate-fade-in-up">
           <section>
             <h3 class="text-xs font-semibold uppercase tracking-wide text-muted mb-1">🌐 Web Verification</h3>
-            <p class="text-sm text-ink">{{ factCheck.summary }}</p>
+            <div class="prose prose-sm dark:prose-invert max-w-none prose-headings:text-ink prose-a:text-accent prose-strong:text-ink prose-table:text-sm" [innerHTML]="factCheck.summary | markdown"></div>
           </section>
 
           @if (factCheck.sources.length > 0) {

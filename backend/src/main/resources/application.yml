@@ -47,7 +47,11 @@ app:
   ollama:
     base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
     embedding-model: ${OLLAMA_EMBEDDING_MODEL:nomic-embed-text}
-    chat-model: ${OLLAMA_CHAT_MODEL:llama3.2}
+    # llama3.2:3b was faster but unreliable at structured output (e.g. markdown tables for
+    # comparison questions) even with an explicit example in the prompt - confirmed via direct
+    # side-by-side test that llama3.1:8b follows the same instruction correctly. Slower per
+    # response, but already pulled (used as the eval suite's judge model) - no new download.
+    chat-model: ${OLLAMA_CHAT_MODEL:llama3.1:8b}
   ocr:
     tessdata-path: ${TESSDATA_PATH:}
   rate-limit:

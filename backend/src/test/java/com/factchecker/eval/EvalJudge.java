@@ -13,8 +13,6 @@ import org.springframework.web.client.RestClient;
  */
 public class EvalJudge {
 
-    private static final String JUDGE_MODEL = "llama3.1:8b";
-
     private static final String COMMON_PREAMBLE = """
             You are grading one answer from an AI system against a plain-language expectation of
             what a correct answer must do. Judge semantic correctness and meaning - never require
@@ -86,12 +84,20 @@ public class EvalJudge {
         AppProperties judgeProperties = new AppProperties();
         AppProperties.Ollama ollama = new AppProperties.Ollama();
         ollama.setBaseUrl(realAppProperties.getOllama().getBaseUrl());
-        ollama.setChatModel(JUDGE_MODEL);
+        // Deliberately picked to differ from whichever model production is actually using right
+        // now, rather than a hardcoded name - if production's model changes, the judge stays
+        // independent automatically instead of silently becoming "the model grading itself."
+        ollama.setChatModel(pickJudgeModel(realAppProperties.getOllama().getChatModel()));
         ollama.setEmbeddingModel(realAppProperties.getOllama().getEmbeddingModel());
         judgeProperties.setOllama(ollama);
 
         this.objectMapper = objectMapper;
         this.judgeClient = new OllamaChatClient(judgeProperties, restClientBuilder, objectMapper);
+    }
+
+    /** Both models are already pulled locally either way - swap if production ever changes again. */
+    private static String pickJudgeModel(String productionModel) {
+        return "llama3.1:8b".equals(productionModel) ? "llama3.2" : "llama3.1:8b";
     }
 
     public JudgeVerdict judge(EvalCase evalCase, String actualResult) {

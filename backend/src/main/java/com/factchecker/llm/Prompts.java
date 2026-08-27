@@ -43,6 +43,17 @@ public final class Prompts {
               "RxJS"), answer as if they meant the term in the excerpts, and say so explicitly at the
               start of "explanation" (e.g. "Interpreting 'rxj' as 'RxJS':") - do not silently guess
               without flagging it, and do not refuse to answer just because the question was terse.
+            - "explanation" is rendered as Markdown, so use real formatting where it genuinely helps
+              readability - it is not optional decoration, it is how you should present structured
+              information. If (and only if) the question is a "vs"/comparison between two or more
+              things, "explanation" MUST open with a Markdown table shaped exactly like this example
+              (use \\n for newlines inside the JSON string value), THEN add your prose explanation
+              below it:
+              | Aspect | A | B |\\n|---|---|---|\\n| What it does | ... | ... |\\n| When to use it | ... | ... |
+              For a multi-step or multi-part (non-comparison) answer, use a bullet or numbered list
+              instead, and bold key terms. A single short factual answer needs neither - use plain
+              sentences when nothing is being compared or enumerated. "documentClaim" always stays
+              plain prose (a normal sentence), never a table - it is a claim, not a comparison.
             - Respond with ONLY a JSON object of this exact shape, no markdown fences:
               {"documentClaim": string, "explanation": string, "insufficientContext": boolean}
             """;
