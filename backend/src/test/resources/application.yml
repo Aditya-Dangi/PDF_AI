@@ -24,3 +24,9 @@ app:
     base-url: http://localhost:11434
     embedding-model: nomic-embed-text
     chat-model: llama3.2
+  # Tests (e.g. DocumentAccessControlIntegrationTest) legitimately fire many auth requests in
+  # quick succession within one shared Spring context - a real client never would, so the
+  # production-sane limits from the main application.yml would otherwise trip mid-test-run.
+  rate-limit:
+    standard-capacity: 100000
+    auth-capacity: 100000

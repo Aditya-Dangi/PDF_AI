@@ -28,6 +28,13 @@ spring:
       max-file-size: 30MB
       max-request-size: 30MB
 
+# Error tracking - the Sentry Spring Boot starter no-ops entirely when dsn is blank, so this is
+# safe to leave as-is with no account: set SENTRY_DSN once you've created a (free) Sentry project.
+sentry:
+  dsn: ${SENTRY_DSN:}
+  environment: ${SENTRY_ENVIRONMENT:development}
+  traces-sample-rate: ${SENTRY_TRACES_SAMPLE_RATE:0.1}
+
 app:
   upload-dir: ./uploads
   jwt:
@@ -43,6 +50,11 @@ app:
     chat-model: ${OLLAMA_CHAT_MODEL:llama3.2}
   ocr:
     tessdata-path: ${TESSDATA_PATH:}
+  rate-limit:
+    # Requests allowed per minute, per user (or per IP if unauthenticated). In-memory and
+    # per-instance - see RateLimitFilter before scaling to multiple backend instances.
+    standard-capacity: ${RATE_LIMIT_STANDARD:30}
+    auth-capacity: ${RATE_LIMIT_AUTH:10}
 
 logging:
   level:

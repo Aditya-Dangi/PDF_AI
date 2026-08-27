@@ -79,6 +79,20 @@
 			<version>5.11.0</version>
 		</dependency>
 
+		<!-- In-memory rate limiting - see RateLimitFilter for why this is per-instance for now -->
+		<dependency>
+			<groupId>com.bucket4j</groupId>
+			<artifactId>bucket4j_jdk11-core</artifactId>
+			<version>8.14.0</version>
+		</dependency>
+
+		<!-- Error tracking - inert until app.sentry-dsn (SENTRY_DSN) is set, no account required to run -->
+		<dependency>
+			<groupId>io.sentry</groupId>
+			<artifactId>sentry-spring-boot-starter-jakarta</artifactId>
+			<version>8.16.0</version>
+		</dependency>
+
 		<!-- JWT for stateless auth -->
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
