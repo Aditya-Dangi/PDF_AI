@@ -52,6 +52,9 @@ app:
     # side-by-side test that llama3.1:8b follows the same instruction correctly. Slower per
     # response, but already pulled (used as the eval suite's judge model) - no new download.
     chat-model: ${OLLAMA_CHAT_MODEL:llama3.1:8b}
+    # Fallback for user-selected image regions (e.g. a diagram/chart) when OCR finds too little
+    # text to work with - see ImageQueryService. ~4.7GB, already pulled locally.
+    vision-model: ${OLLAMA_VISION_MODEL:llava}
   ocr:
     tessdata-path: ${TESSDATA_PATH:}
   rate-limit:

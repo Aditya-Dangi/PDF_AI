@@ -23,12 +23,13 @@ const DOCUMENT_LOAD_TIMEOUT_MS = 20000;
  *  question/claim - long enough for a real paragraph or a short code snippet, short enough to
  *  stay a reasonably-sized embedding query and a readable bubble in the chat panel. */
 const MAX_SELECTION_CHARS = 600;
+/** A drag shorter than this (in either dimension, canvas pixels) is treated as an accidental
+ *  click rather than a deliberate image-region selection. */
+const MIN_REGION_DRAG_PX = 20;
 
-interface SelectionToolbarState {
-  x: number;
-  y: number;
-  text: string;
-}
+type SelectionToolbarState =
+  | { kind: 'text'; x: number; y: number; text: string }
+  | { kind: 'image'; x: number; y: number; imageDataUrl: string };
 
 interface PageRender {
   pageNumber: number;
@@ -36,6 +37,22 @@ interface PageRender {
   overlay: HTMLDivElement;
   wrapper: HTMLDivElement;
   scale: number;
+  /** Null when the text layer failed to render (see renderPage's catch) or the page failed
+   *  entirely - image-region selection still works in that case, since there's no real text to
+   *  conflict with anyway. */
+  textLayer: HTMLDivElement | null;
+}
+
+/** Tracks an in-progress drag over a page's canvas (i.e. NOT over the text layer) - the frontend
+ *  half of "select an image region", for diagrams/charts/screenshots the text layer can't cover.
+ *  Coordinates are canvas-pixel-relative, matching the coordinate space cropCanvasRegion() expects. */
+interface RegionDragState {
+  pageNumber: number;
+  canvas: HTMLCanvasElement;
+  wrapper: HTMLDivElement;
+  startX: number;
+  startY: number;
+  boxEl: HTMLDivElement | null;
 }
 
 @Component({
@@ -55,14 +72,19 @@ export class PdfViewerComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Output() explainSelection = new EventEmitter<string>();
   /** Fired when the user picks "Summarize" (web-verified) from the selection toolbar. */
   @Output() summarizeSelection = new EventEmitter<string>();
+  /** Same as explainSelection, for a dragged image region (a diagram/chart/screenshot) instead of
+   *  selectable text - payload is a data: URL PNG crop of that region. */
+  @Output() explainImageSelection = new EventEmitter<string>();
+  /** Same as summarizeSelection, for a dragged image region. */
+  @Output() summarizeImageSelection = new EventEmitter<string>();
 
   loading = true;
   error: string | null = null;
   /** How many pages have finished rendering so far, and the total once known - drives the progress text. */
   progress = { rendered: 0, total: 0 };
-  /** Set while the user has an active text selection with a floating toolbar showing above it;
-   *  null otherwise. Position is relative to the scrollable wrapper, including its current scroll
-   *  offset, so it stays pinned to the selection rather than the viewport. */
+  /** Set while the user has an active text or image-region selection with a floating toolbar
+   *  showing above it; null otherwise. Position is relative to the scrollable wrapper, including
+   *  its current scroll offset, so it stays pinned to the selection rather than the viewport. */
   selectionToolbar: SelectionToolbarState | null = null;
 
   @ViewChild('container', { static: true }) containerRef!: ElementRef<HTMLDivElement>;
@@ -70,6 +92,9 @@ export class PdfViewerComponent implements AfterViewInit, OnChanges, OnDestroy {
   private pdfDoc: PDFDocumentProxy | null = null;
   private pages = new Map<number, PageRender>();
   private renderToken = 0;
+  /** Non-null only while the user is actively dragging out an image-region selection (mousedown
+   *  landed outside the text layer, e.g. on a diagram). */
+  private regionDrag: RegionDragState | null = null;
 
   constructor(private cdr: ChangeDetectorRef) {}
 
@@ -95,12 +120,84 @@ export class PdfViewerComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   /** Anticipates a new selection starting - hides any stale toolbar immediately rather than
-   *  leaving it floating over the old (about to be replaced) selection while the user drags. */
-  onContainerMouseDown(): void {
+   *  leaving it floating over the old (about to be replaced) selection while the user drags.
+   *  Also decides here whether this drag is a text selection (let the browser handle it natively,
+   *  as before) or an image-region selection (mousedown landed outside the text layer entirely,
+   *  e.g. directly on a diagram/chart) - in which case we drive the drag ourselves. */
+  onContainerMouseDown(event: MouseEvent): void {
     this.selectionToolbar = null;
+    this.regionDrag = null;
+
+    const target = event.target as HTMLElement;
+    const wrapper = target.closest('[data-page]') as HTMLDivElement | null;
+    const pageNumber = wrapper ? Number(wrapper.dataset['page']) : NaN;
+    const page = this.pages.get(pageNumber);
+    if (!wrapper || !page || !page.canvas) return;
+
+    // pdf.js's text layer is one full-page container div with individual <span>s positioned only
+    // where real text actually is - `elementFromPoint`/`closest('.textLayer')` both land on that
+    // same full-page container even over a totally empty area (e.g. a diagram with no text nearby),
+    // so they can't tell "over real text" from "over empty space". Checking each span's own
+    // bounding box against the actual click point is the only reliable way to tell the two apart.
+    if (this.pointIsOverRealText(page.textLayer, event.clientX, event.clientY)) return;
+
+    const canvasRect = page.canvas.getBoundingClientRect();
+    this.regionDrag = {
+      pageNumber,
+      canvas: page.canvas,
+      wrapper,
+      startX: event.clientX - canvasRect.left,
+      startY: event.clientY - canvasRect.top,
+      boxEl: null
+    };
+    // Stops the browser's own drag-to-select/image-drag behavior from fighting with our own
+    // rectangle - without this, dragging over a canvas can trigger a native "ghost image" drag.
+    event.preventDefault();
   }
 
-  onContainerMouseUp(): void {
+  private pointIsOverRealText(textLayer: HTMLDivElement | null, clientX: number, clientY: number): boolean {
+    if (!textLayer) return false;
+    for (const span of Array.from(textLayer.querySelectorAll('span'))) {
+      if (!span.textContent?.trim()) continue;
+      const r = span.getBoundingClientRect();
+      if (clientX >= r.left && clientX <= r.right && clientY >= r.top && clientY <= r.bottom) return true;
+    }
+    return false;
+  }
+
+  onContainerMouseMove(event: MouseEvent): void {
+    if (!this.regionDrag) return;
+
+    const canvasRect = this.regionDrag.canvas.getBoundingClientRect();
+    const currentX = event.clientX - canvasRect.left;
+    const currentY = event.clientY - canvasRect.top;
+    const left = Math.min(this.regionDrag.startX, currentX);
+    const top = Math.min(this.regionDrag.startY, currentY);
+    const width = Math.abs(currentX - this.regionDrag.startX);
+    const height = Math.abs(currentY - this.regionDrag.startY);
+
+    const page = this.pages.get(this.regionDrag.pageNumber);
+    if (!page) return;
+
+    if (!this.regionDrag.boxEl) {
+      const box = document.createElement('div');
+      box.className = 'absolute border-2 border-accent bg-accent/10 pointer-events-none';
+      page.overlay.appendChild(box);
+      this.regionDrag.boxEl = box;
+    }
+    const box = this.regionDrag.boxEl;
+    box.style.left = `${left}px`;
+    box.style.top = `${top}px`;
+    box.style.width = `${width}px`;
+    box.style.height = `${height}px`;
+  }
+
+  onContainerMouseUp(event: MouseEvent): void {
+    if (this.regionDrag) {
+      this.finalizeRegionDrag(event);
+      return;
+    }
+
     const selection = window.getSelection();
     if (!selection || selection.isCollapsed || selection.rangeCount === 0) return;
     if (!this.containerRef.nativeElement.contains(selection.anchorNode)) return;
@@ -117,29 +214,89 @@ export class PdfViewerComponent implements AfterViewInit, OnChanges, OnDestroy {
     const anchorRect = lineRects[0] ?? range.getBoundingClientRect();
 
     const wrapper = this.containerRef.nativeElement.parentElement!;
-    const wrapperRect = wrapper.getBoundingClientRect();
-    const rawX = anchorRect.left - wrapperRect.left + wrapper.scrollLeft + anchorRect.width / 2;
-    // Clamp so the toolbar (roughly 170px wide) can't render partly outside the visible pane,
-    // even when the anchor line sits near the left/right edge of the scrollable viewport.
-    const minX = wrapper.scrollLeft + 90;
-    const maxX = wrapper.scrollLeft + wrapper.clientWidth - 90;
+    const anchorX = this.toWrapperX(anchorRect.left + anchorRect.width / 2, wrapper);
+    const anchorY = this.toWrapperY(anchorRect.top, wrapper) - 8;
 
     this.selectionToolbar = {
-      x: Math.max(minX, Math.min(rawX, maxX)),
-      y: anchorRect.top - wrapperRect.top + wrapper.scrollTop - 8,
+      kind: 'text',
+      x: this.clampToWrapperWidth(anchorX, wrapper),
+      y: anchorY,
       text: text.length > MAX_SELECTION_CHARS ? text.slice(0, MAX_SELECTION_CHARS).trimEnd() + '…' : text
     };
   }
 
+  private finalizeRegionDrag(event: MouseEvent): void {
+    const drag = this.regionDrag!;
+    this.regionDrag = null;
+    drag.boxEl?.remove();
+
+    const canvasRect = drag.canvas.getBoundingClientRect();
+    const endX = event.clientX - canvasRect.left;
+    const endY = event.clientY - canvasRect.top;
+    const left = Math.min(drag.startX, endX);
+    const top = Math.min(drag.startY, endY);
+    const width = Math.abs(endX - drag.startX);
+    const height = Math.abs(endY - drag.startY);
+    if (width < MIN_REGION_DRAG_PX || height < MIN_REGION_DRAG_PX) return;
+
+    const imageDataUrl = this.cropCanvasRegion(drag.canvas, left, top, width, height);
+    if (!imageDataUrl) return;
+
+    const wrapper = this.containerRef.nativeElement.parentElement!;
+    const anchorX = canvasRect.left - wrapper.getBoundingClientRect().left + wrapper.scrollLeft + left + width / 2;
+    const anchorY = this.toWrapperY(canvasRect.top + top, wrapper) - 8;
+
+    this.selectionToolbar = {
+      kind: 'image',
+      x: this.clampToWrapperWidth(anchorX, wrapper),
+      y: anchorY,
+      imageDataUrl
+    };
+  }
+
+  private cropCanvasRegion(source: HTMLCanvasElement, x: number, y: number, width: number, height: number): string | null {
+    const cropCanvas = document.createElement('canvas');
+    cropCanvas.width = width;
+    cropCanvas.height = height;
+    const ctx = cropCanvas.getContext('2d');
+    if (!ctx) return null;
+    ctx.drawImage(source, x, y, width, height, 0, 0, width, height);
+    return cropCanvas.toDataURL('image/png');
+  }
+
+  private toWrapperX(viewportX: number, wrapper: HTMLElement): number {
+    return viewportX - wrapper.getBoundingClientRect().left + wrapper.scrollLeft;
+  }
+
+  private toWrapperY(viewportY: number, wrapper: HTMLElement): number {
+    return viewportY - wrapper.getBoundingClientRect().top + wrapper.scrollTop;
+  }
+
+  /** Keeps the toolbar (roughly 170px wide) from rendering partly outside the visible pane, even
+   *  when the anchor point sits near the left/right edge of the scrollable viewport. */
+  private clampToWrapperWidth(x: number, wrapper: HTMLElement): number {
+    const min = wrapper.scrollLeft + 90;
+    const max = wrapper.scrollLeft + wrapper.clientWidth - 90;
+    return Math.max(min, Math.min(x, max));
+  }
+
   onExplainClick(): void {
     if (!this.selectionToolbar) return;
-    this.explainSelection.emit(this.selectionToolbar.text);
+    if (this.selectionToolbar.kind === 'text') {
+      this.explainSelection.emit(this.selectionToolbar.text);
+    } else {
+      this.explainImageSelection.emit(this.selectionToolbar.imageDataUrl);
+    }
     this.dismissSelectionToolbar();
   }
 
   onSummarizeClick(): void {
     if (!this.selectionToolbar) return;
-    this.summarizeSelection.emit(this.selectionToolbar.text);
+    if (this.selectionToolbar.kind === 'text') {
+      this.summarizeSelection.emit(this.selectionToolbar.text);
+    } else {
+      this.summarizeImageSelection.emit(this.selectionToolbar.imageDataUrl);
+    }
     this.dismissSelectionToolbar();
   }
 
@@ -154,6 +311,8 @@ export class PdfViewerComponent implements AfterViewInit, OnChanges, OnDestroy {
     this.error = null;
     this.progress = { rendered: 0, total: 0 };
     this.pages.clear();
+    this.regionDrag = null;
+    this.selectionToolbar = null;
     this.containerRef.nativeElement.innerHTML = '';
     this.cdr.detectChanges();
 
@@ -263,6 +422,7 @@ export class PdfViewerComponent implements AfterViewInit, OnChanges, OnDestroy {
 
     // Selectable text layer: transparent text positioned exactly over the rendered glyphs, so
     // users can select/copy text even though what's visually painted is the canvas image.
+    let textLayer: HTMLDivElement | null = null;
     try {
       const textLayerDiv = document.createElement('div');
       textLayerDiv.className = 'textLayer';
@@ -271,11 +431,12 @@ export class PdfViewerComponent implements AfterViewInit, OnChanges, OnDestroy {
 
       const textContent = await page.getTextContent();
       await pdfjsLib.renderTextLayer({ textContentSource: textContent, container: textLayerDiv, viewport }).promise;
+      textLayer = textLayerDiv;
     } catch (err) {
       console.warn(`Text layer unavailable for page ${pageNumber} - the page is still viewable, just not selectable.`, err);
     }
 
-    this.pages.set(pageNumber, { pageNumber, canvas, overlay, wrapper, scale: viewport.scale });
+    this.pages.set(pageNumber, { pageNumber, canvas, overlay, wrapper, scale: viewport.scale, textLayer });
   }
 
   private renderFailedPagePlaceholder(pageNumber: number): void {
@@ -295,7 +456,7 @@ export class PdfViewerComponent implements AfterViewInit, OnChanges, OnDestroy {
     wrapper.appendChild(overlay);
 
     this.containerRef.nativeElement.appendChild(wrapper);
-    this.pages.set(pageNumber, { pageNumber, canvas: null, overlay, wrapper, scale: 1.3 });
+    this.pages.set(pageNumber, { pageNumber, canvas: null, overlay, wrapper, scale: 1.3, textLayer: null });
   }
 
   private applyHighlight(): void {

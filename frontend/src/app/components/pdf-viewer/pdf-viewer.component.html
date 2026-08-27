@@ -34,8 +34,9 @@
     #container
     class="py-4"
     (click)="documentClicked.emit()"
-    (mousedown)="onContainerMouseDown()"
-    (mouseup)="onContainerMouseUp()"
+    (mousedown)="onContainerMouseDown($event)"
+    (mousemove)="onContainerMouseMove($event)"
+    (mouseup)="onContainerMouseUp($event)"
   ></div>
 
   @if (selectionToolbar; as toolbar) {

@@ -10,8 +10,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import javax.imageio.ImageIO;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,12 +42,7 @@ public class OcrService {
         try {
             PDFRenderer renderer = new PDFRenderer(document);
             BufferedImage image = renderer.renderImageWithDPI(pageIndexZeroBased, RENDER_DPI);
-
-            Tesseract tesseract = new Tesseract();
-            String tessdataPath = appProperties.getOcr().getTessdataPath();
-            if (tessdataPath != null && !tessdataPath.isBlank()) {
-                tesseract.setDatapath(tessdataPath);
-            }
+            Tesseract tesseract = newTesseract();
 
             List<Word> words = tesseract.getWords(image, ITessAPI.TessPageIteratorLevel.RIL_TEXTLINE);
             for (Word word : words) {
@@ -72,5 +69,31 @@ public class OcrService {
                     pageNumberOneBased, ex.getMessage());
         }
         return lines;
+    }
+
+    /** OCRs an arbitrary image (e.g. a user-selected region of a rendered PDF page from the
+     *  frontend's selection toolbar) and returns its plain text, or "" if none was found / OCR
+     *  failed - callers (ImageQueryService) treat an empty result as "fall back to vision
+     *  description" rather than an error. */
+    public String extractPlainText(byte[] imageBytes) {
+        try {
+            BufferedImage image = ImageIO.read(new ByteArrayInputStream(imageBytes));
+            if (image == null) return "";
+
+            String text = newTesseract().doOCR(image);
+            return text == null ? "" : text.trim();
+        } catch (Throwable ex) {
+            log.warn("OCR failed for a selected image region - falling back to vision description. Cause: {}", ex.getMessage());
+            return "";
+        }
+    }
+
+    private Tesseract newTesseract() {
+        Tesseract tesseract = new Tesseract();
+        String tessdataPath = appProperties.getOcr().getTessdataPath();
+        if (tessdataPath != null && !tessdataPath.isBlank()) {
+            tesseract.setDatapath(tessdataPath);
+        }
+        return tesseract;
     }
 }

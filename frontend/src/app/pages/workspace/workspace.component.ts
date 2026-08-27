@@ -184,6 +184,56 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
     setTimeout(() => this.claimPanel?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   }
 
+  /** "Explain" from the PDF selection toolbar, for a dragged image region (a diagram/chart the
+   *  text layer can't cover) instead of selectable text - same idea as explainSelection() but the
+   *  backend needs the actual image bytes (OCR/vision resolution happens server-side), so this
+   *  can't just funnel through ask(). */
+  explainImageSelection(imageDataUrl: string): void {
+    if (this.document()?.status !== 'READY') {
+      this.loadError.set('Questions are available once this document finishes indexing.');
+      return;
+    }
+    this.asking.set(true);
+    this.conversationService.askImage(this.documentId, imageDataUrl).subscribe({
+      next: (answer) => {
+        this.asking.set(false);
+        this.exchanges.update((list) => [
+          ...list,
+          { messageId: answer.messageId, question: '🖼️ Selected image region', answer, factCheck: null, claims: null }
+        ]);
+        this.scrollToLatestAnswer();
+      },
+      error: (err) => {
+        this.asking.set(false);
+        this.loadError.set(err?.error?.message ?? 'Failed to analyze the selected image region.');
+      }
+    });
+  }
+
+  /** "Summarize" from the PDF selection toolbar, for a dragged image region - same idea as
+   *  summarizeSelection() but for image bytes instead of text. */
+  summarizeImageSelection(imageDataUrl: string): void {
+    if (this.document()?.status !== 'READY') {
+      this.loadError.set('Fact-checking is available once this document finishes indexing.');
+      return;
+    }
+    this.showClaimInput.set(true);
+    this.claimText = '🖼️ Selected image region';
+    this.claimChecking.set(true);
+    this.claimResult.set(null);
+    this.conversationService.factCheckImage(this.documentId, imageDataUrl).subscribe({
+      next: (result) => {
+        this.claimChecking.set(false);
+        this.claimResult.set(result);
+      },
+      error: (err) => {
+        this.claimChecking.set(false);
+        this.loadError.set(err?.error?.message ?? 'Failed to fact-check the selected image region.');
+      }
+    });
+    setTimeout(() => this.claimPanel?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  }
+
   requestFactCheck(exchange: AnsweredExchange): void {
     this.factCheckLoadingFor.set(exchange.messageId);
     this.conversationService.factCheckMessage(this.documentId, exchange.messageId).subscribe({

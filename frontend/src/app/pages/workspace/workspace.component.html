@@ -46,6 +46,8 @@
           (documentClicked)="clearHighlight()"
           (explainSelection)="explainSelection($event)"
           (summarizeSelection)="summarizeSelection($event)"
+          (explainImageSelection)="explainImageSelection($event)"
+          (summarizeImageSelection)="summarizeImageSelection($event)"
           class="h-full block"
         />
       } @else if (!loadError()) {

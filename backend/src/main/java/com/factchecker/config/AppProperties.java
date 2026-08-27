@@ -64,6 +64,10 @@ public class AppProperties {
         private String baseUrl;
         private String embeddingModel;
         private String chatModel;
+        /** Used only as a fallback when OCR finds too little text in a user-selected image region
+         *  (e.g. a pure diagram/chart) - see ImageQueryService. Blank/unset disables the fallback
+         *  rather than failing the whole request. */
+        private String visionModel;
 
         public String getBaseUrl() { return baseUrl; }
         public void setBaseUrl(String baseUrl) { this.baseUrl = baseUrl; }
@@ -71,6 +75,8 @@ public class AppProperties {
         public void setEmbeddingModel(String embeddingModel) { this.embeddingModel = embeddingModel; }
         public String getChatModel() { return chatModel; }
         public void setChatModel(String chatModel) { this.chatModel = chatModel; }
+        public String getVisionModel() { return visionModel; }
+        public void setVisionModel(String visionModel) { this.visionModel = visionModel; }
     }
 
     public static class Ocr {
