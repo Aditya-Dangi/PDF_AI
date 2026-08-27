@@ -63,7 +63,11 @@ public class OcrService {
                         true
                 ));
             }
-        } catch (Exception ex) {
+        } catch (Throwable ex) {
+            // Deliberately catches Throwable, not just Exception: a missing/broken native Tesseract
+            // install surfaces as an UnsatisfiedLinkError, which is an Error, not an Exception - a
+            // narrower catch here would let it slip past silently and crash the whole document's
+            // async processing job instead of degrading gracefully as this method promises.
             log.warn("OCR failed for page {} - continuing without OCR text for this page. Cause: {}",
                     pageNumberOneBased, ex.getMessage());
         }

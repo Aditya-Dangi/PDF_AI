@@ -118,7 +118,11 @@ public class PdfProcessingService {
             document.setStatus(DocumentStatus.READY);
             documentRepository.save(document);
             log.info("Document {} processed: {} pages, {} chunks", documentId, pages.size(), candidates.size());
-        } catch (Exception ex) {
+        } catch (Throwable ex) {
+            // Catches Throwable, not just Exception: this async job's whole point is to always
+            // leave the document in a terminal state (READY or FAILED) rather than stuck in
+            // PROCESSING forever. An uncaught Error here (e.g. a native-library failure) would
+            // otherwise crash silently past this handler, orphaning the document indefinitely.
             log.error("Failed to process document {}: {}", documentId, ex.getMessage(), ex);
             document.setStatus(DocumentStatus.FAILED);
             document.setFailureReason(safeMessage(ex));
@@ -147,7 +151,7 @@ public class PdfProcessingService {
         return pages;
     }
 
-    private String safeMessage(Exception ex) {
+    private String safeMessage(Throwable ex) {
         String message = ex.getMessage();
         if (message == null || message.isBlank()) message = ex.getClass().getSimpleName();
         return message.length() > 500 ? message.substring(0, 500) : message;

@@ -54,6 +54,9 @@ services:
       OLLAMA_BASE_URL: http://ollama:11434
       SEARXNG_BASE_URL: http://searxng:8080
       JWT_SECRET: ${JWT_SECRET:-change-this-to-a-random-64-byte-secret-in-your-env}
+      # Matches the tesseract-ocr-eng package's install path in the backend image (Dockerfile) -
+      # set explicitly rather than relying on Tesseract's own TESSDATA_PREFIX auto-detection.
+      TESSDATA_PATH: /usr/share/tesseract-ocr/5/tessdata
     volumes:
       - backend-uploads:/app/uploads
     depends_on:
