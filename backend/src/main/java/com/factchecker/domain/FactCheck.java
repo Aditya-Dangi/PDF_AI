@@ -1,6 +1,7 @@
 package com.factchecker.domain;
 
 import jakarta.persistence.*;
+import org.hibernate.Length;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import lombok.Getter;
@@ -24,7 +25,7 @@ public class FactCheck {
     private String messageId;
 
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(nullable = false)
+    @Column(nullable = false, length = Length.LONG32)
     private String claimText;
 
     @Column(nullable = false)
@@ -41,12 +42,12 @@ public class FactCheck {
     private double webConfidence;
 
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(nullable = false)
+    @Column(nullable = false, length = Length.LONG32)
     private String summary;
 
     /** JSON array of {url, title, snippet, stance, authorityTier, publishedDate}. */
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(nullable = false)
+    @Column(nullable = false, length = Length.LONG32)
     private String sourcesJson;
 
     /** How long FactCheckService.factCheck() took, wall-clock, for display in the UI. Nullable so

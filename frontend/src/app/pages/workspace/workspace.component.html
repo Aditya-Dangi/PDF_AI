@@ -243,12 +243,16 @@
         </div>
         @if (asking()) {
           <div class="mt-2">
-            <app-loading-timer [active]="asking()" label="Reading the document and composing an answer..." [estimatedSeconds]="askEstimateSeconds" />
+            <app-loading-timer
+              [active]="asking()"
+              [label]="answerMode() === 'QUALITY' ? 'Researching in multiple rounds, filling gaps...' : 'Reading the document and composing an answer...'"
+              [estimatedSeconds]="answerMode() === 'QUALITY' ? askQualityEstimateSeconds : askEstimateSeconds"
+            />
           </div>
         }
         @if (summarizing()) {
           <div class="mt-2">
-            <app-loading-timer [active]="summarizing()" label="Summarizing the selection..." [estimatedSeconds]="askEstimateSeconds" />
+            <app-loading-timer [active]="summarizing()" label="Summarizing the selection..." [estimatedSeconds]="summarizeEstimateSeconds" />
           </div>
         }
 

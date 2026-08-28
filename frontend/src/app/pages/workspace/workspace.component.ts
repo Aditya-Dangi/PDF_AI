@@ -61,7 +61,9 @@ type TimelineEntry = AnswerTimelineEntry | SummaryTimelineEntry | FactCheckTimel
 })
 export class WorkspaceComponent implements OnInit, OnDestroy {
   readonly askEstimateSeconds = TIME_ESTIMATES.ask;
+  readonly askQualityEstimateSeconds = TIME_ESTIMATES.askQuality;
   readonly factCheckEstimateSeconds = TIME_ESTIMATES.factCheck;
+  readonly summarizeEstimateSeconds = TIME_ESTIMATES.summarize;
 
   document = signal<DocumentSummary | null>(null);
   fileUrl = signal<string | null>(null);

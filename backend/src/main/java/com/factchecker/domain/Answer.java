@@ -1,6 +1,7 @@
 package com.factchecker.domain;
 
 import jakarta.persistence.*;
+import org.hibernate.Length;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import lombok.Getter;
@@ -24,11 +25,11 @@ public class Answer {
     private String messageId;
 
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(nullable = false)
+    @Column(nullable = false, length = Length.LONG32)
     private String documentClaim;
 
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(nullable = false)
+    @Column(nullable = false, length = Length.LONG32)
     private String explanation;
 
     @Column(nullable = false)
@@ -42,7 +43,7 @@ public class Answer {
 
     /** JSON array of {chunkId, page, rects, text, similarity}. */
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(nullable = false)
+    @Column(nullable = false, length = Length.LONG32)
     private String evidenceJson;
 
     /** How long RagService.answer() took, wall-clock, for display in the UI. Nullable so adding

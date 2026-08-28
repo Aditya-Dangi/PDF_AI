@@ -1,6 +1,7 @@
 package com.factchecker.domain;
 
 import jakarta.persistence.*;
+import org.hibernate.Length;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import lombok.Getter;
@@ -29,7 +30,7 @@ public class ChatMessage {
     private MessageRole role;
 
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(nullable = false)
+    @Column(nullable = false, length = Length.LONG32)
     private String content;
 
     /** For an ASSISTANT message, the id of the USER message it answers - null for a USER message

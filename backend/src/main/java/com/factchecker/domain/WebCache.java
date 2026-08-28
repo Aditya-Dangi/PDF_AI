@@ -1,6 +1,7 @@
 package com.factchecker.domain;
 
 import jakarta.persistence.*;
+import org.hibernate.Length;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import lombok.Getter;
@@ -25,7 +26,7 @@ public class WebCache {
     private String claimHash;
 
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(nullable = false)
+    @Column(nullable = false, length = Length.LONG32)
     private String resultJson;
 
     @Column(nullable = false)

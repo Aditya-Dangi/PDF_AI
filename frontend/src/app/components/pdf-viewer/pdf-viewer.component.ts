@@ -26,6 +26,13 @@ const MAX_SELECTION_CHARS = 600;
 /** A drag shorter than this (in either dimension, canvas pixels) is treated as an accidental
  *  click rather than a deliberate image-region selection. */
 const MIN_REGION_DRAG_PX = 20;
+/** Horizontal padding around a highlighted line box, in rendered pixels. */
+const HIGHLIGHT_PADDING_X = 3;
+/** Vertical padding when a highlight is a single line, or its spacing can't be measured. */
+const HIGHLIGHT_FALLBACK_PADDING_Y = 4;
+/** Upper bound on vertical padding, so an unusually large gap (a paragraph break inside the
+ *  highlighted range) doesn't inflate every box into a slab. */
+const HIGHLIGHT_MAX_PADDING_Y = 10;
 /** Rendered toolbar height (~40px) + its connector arrow (~6px) + a small breathing-room gap -
  *  the minimum clearance needed above a selection for the toolbar to render above it without
  *  being clipped by (or overlapping into) whatever's above, e.g. a heading right above the
@@ -480,6 +487,27 @@ export class PdfViewerComponent implements AfterViewInit, OnChanges, OnDestroy {
     this.pages.set(pageNumber, { pageNumber, canvas: null, overlay, wrapper, scale: 1.3, textLayer: null });
   }
 
+  /**
+   * Half the actual vertical gap between consecutive highlighted lines, so padding each box by this
+   * much makes them meet exactly and the highlight reads as one continuous region.
+   *
+   * Derived from the rects rather than fixed, because the gap depends on the document's line
+   * spacing and the current render scale - a constant that closes the gap in one document leaves
+   * stripes in another, or bloats a tightly-set one.
+   */
+  private verticalHighlightPadding(rects: { top: number; height: number }[]): number {
+    const gaps: number[] = [];
+    for (let i = 1; i < rects.length; i++) {
+      const gap = rects[i].top - (rects[i - 1].top + rects[i - 1].height);
+      if (gap > 0) gaps.push(gap);
+    }
+    if (gaps.length === 0) return HIGHLIGHT_FALLBACK_PADDING_Y;
+
+    gaps.sort((a, b) => a - b);
+    const medianGap = gaps[Math.floor(gaps.length / 2)];
+    return Math.min(HIGHLIGHT_MAX_PADDING_Y, Math.max(HIGHLIGHT_FALLBACK_PADDING_Y, medianGap / 2));
+  }
+
   private applyHighlight(): void {
     for (const page of this.pages.values()) {
       page.overlay.innerHTML = '';
@@ -490,13 +518,26 @@ export class PdfViewerComponent implements AfterViewInit, OnChanges, OnDestroy {
     const page = this.pages.get(this.targetPage);
     if (!page) return;
 
-    for (const rect of this.targetRects) {
+    // Line boxes hug the glyphs, so drawing them as-is leaves visible gaps between lines and reads
+    // as a stack of separate stripes rather than one highlighted passage. Padding each box - and
+    // squaring off the left edge across the group - makes consecutive lines meet, so a multi-line
+    // highlight covers the whole region the text occupies.
+    const scaled = this.targetRects.map((rect) => ({
+      left: rect.x * page.scale,
+      top: rect.y * page.scale,
+      width: rect.width * page.scale,
+      height: rect.height * page.scale
+    }));
+    const groupLeft = Math.min(...scaled.map((r) => r.left));
+    const paddingY = this.verticalHighlightPadding(scaled);
+
+    for (const rect of scaled) {
       const marker = document.createElement('div');
-      marker.className = 'absolute bg-yellow-300/50 border border-yellow-500/70 rounded-sm animate-highlight-pulse';
-      marker.style.left = `${rect.x * page.scale}px`;
-      marker.style.top = `${rect.y * page.scale}px`;
-      marker.style.width = `${rect.width * page.scale}px`;
-      marker.style.height = `${rect.height * page.scale}px`;
+      marker.className = 'absolute bg-sky-400/20 border border-sky-400/35 rounded animate-highlight-pulse';
+      marker.style.left = `${groupLeft - HIGHLIGHT_PADDING_X}px`;
+      marker.style.top = `${rect.top - paddingY}px`;
+      marker.style.width = `${rect.left - groupLeft + rect.width + HIGHLIGHT_PADDING_X * 2}px`;
+      marker.style.height = `${rect.height + paddingY * 2}px`;
       page.overlay.appendChild(marker);
     }
 

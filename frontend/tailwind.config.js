@@ -22,9 +22,9 @@ module.exports = {
           "100%": { opacity: "1", transform: "translateY(0)" }
         },
         "highlight-pulse": {
-          "0%": { boxShadow: "0 0 0 0 rgba(234, 179, 8, 0.5)" },
-          "70%": { boxShadow: "0 0 0 8px rgba(234, 179, 8, 0)" },
-          "100%": { boxShadow: "0 0 0 0 rgba(234, 179, 8, 0)" }
+          "0%": { boxShadow: "0 0 0 0 rgba(56, 189, 248, 0.45)" },
+          "70%": { boxShadow: "0 0 0 8px rgba(56, 189, 248, 0)" },
+          "100%": { boxShadow: "0 0 0 0 rgba(56, 189, 248, 0)" }
         },
         "slide-in-right": {
           "0%": { opacity: "0", transform: "translateX(24px)" },

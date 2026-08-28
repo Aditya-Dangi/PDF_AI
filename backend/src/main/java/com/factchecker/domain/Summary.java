@@ -1,6 +1,7 @@
 package com.factchecker.domain;
 
 import jakarta.persistence.*;
+import org.hibernate.Length;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import lombok.Getter;
@@ -30,11 +31,11 @@ public class Summary {
      *  resolved text for an image region (see ImageQueryService). Shown in the UI so the user can
      *  see exactly what was summarized, not just the summary itself. */
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(nullable = false)
+    @Column(nullable = false, length = Length.LONG32)
     private String sourceText;
 
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(nullable = false)
+    @Column(nullable = false, length = Length.LONG32)
     private String summaryText;
 
     /** How long the summarization call took, wall-clock, for display in the UI. Nullable so adding

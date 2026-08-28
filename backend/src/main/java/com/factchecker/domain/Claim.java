@@ -1,6 +1,7 @@
 package com.factchecker.domain;
 
 import jakarta.persistence.*;
+import org.hibernate.Length;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import lombok.Getter;
@@ -35,7 +36,7 @@ public class Claim {
     private String sourceClaimId;
 
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(nullable = false)
+    @Column(nullable = false, length = Length.LONG32)
     private String claimText;
 
     @Column(nullable = false)
@@ -79,21 +80,21 @@ public class Claim {
 
     /** JSON array of EvidenceDto - the document passage(s) this claim was grounded in. */
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(nullable = false)
+    @Column(nullable = false, length = Length.LONG32)
     private String evidenceJson;
 
     /** JSON array of SourceDto with stance SUPPORTS/MIXED. */
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(nullable = false)
+    @Column(nullable = false, length = Length.LONG32)
     private String supportSourcesJson;
 
     /** JSON array of SourceDto with stance CONTRADICTS (kept separate from supportSourcesJson so the UI can show disagreement explicitly). */
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(nullable = false)
+    @Column(nullable = false, length = Length.LONG32)
     private String counterSourcesJson;
 
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(nullable = false)
+    @Column(nullable = false, length = Length.LONG32)
     private String rationale;
 
     @Column(nullable = false)
