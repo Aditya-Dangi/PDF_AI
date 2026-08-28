@@ -1,0 +1,302 @@
+<div class="min-h-screen bg-paper text-ink">
+  <!-- ── Nav ─────────────────────────────────────────────────────────── -->
+  <header class="sticky top-0 z-30 backdrop-blur-md bg-paper-translucent border-b border-line">
+    <nav class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+      <a routerLink="/" class="flex items-center gap-2.5 group">
+        <span class="w-7 h-7 rounded-md bg-accent flex items-center justify-center shrink-0">
+          <span class="w-2.5 h-2.5 rounded-[3px] bg-white/90 transition-transform duration-300 group-hover:rotate-45"></span>
+        </span>
+        <span class="font-semibold tracking-tight">Verifiable</span>
+      </a>
+
+      <div class="flex items-center gap-1 sm:gap-3">
+        <a href="#how" class="hidden sm:inline text-sm text-muted hover:text-ink transition-colors px-3 py-2">How it works</a>
+        <a href="#difference" class="hidden sm:inline text-sm text-muted hover:text-ink transition-colors px-3 py-2">Why it's different</a>
+        <app-theme-toggle />
+        @if (isAuthenticated) {
+          <a routerLink="/documents" class="text-sm font-medium bg-accent text-white rounded-lg px-4 py-2 hover:bg-accent-hover transition-all active:scale-95">
+            Open app
+          </a>
+        } @else {
+          <a routerLink="/login" class="text-sm text-muted hover:text-ink transition-colors px-3 py-2">Sign in</a>
+          <a routerLink="/register" class="text-sm font-medium bg-accent text-white rounded-lg px-4 py-2 hover:bg-accent-hover transition-all active:scale-95">
+            Get started
+          </a>
+        }
+      </div>
+    </nav>
+  </header>
+
+  <!-- ── Hero ────────────────────────────────────────────────────────── -->
+  <section class="max-w-6xl mx-auto px-6 pt-16 pb-20 md:pt-24 md:pb-28">
+    <div class="grid md:grid-cols-12 gap-12 md:gap-10 items-center">
+      <div class="md:col-span-5">
+        <p class="inline-flex items-center gap-2 text-xs font-medium text-muted border border-line rounded-full px-3 py-1 mb-6">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+          Runs entirely on your machine
+        </p>
+
+        <h1 class="font-display text-[2.6rem] leading-[1.08] md:text-[3.4rem] tracking-[-0.02em] mb-6">
+          Every answer shows you<br class="hidden md:block" />
+          <span class="italic">where it came from.</span>
+        </h1>
+
+        <p class="text-lg text-muted leading-relaxed mb-8 max-w-md">
+          Ask questions about your documents and get answers grounded in the actual text — with the
+          exact passage highlighted on the page it came from. No guessing whether the AI made it up.
+        </p>
+
+        <div class="flex flex-wrap items-center gap-3">
+          <a
+            [routerLink]="isAuthenticated ? '/documents' : '/register'"
+            class="text-sm font-medium bg-accent text-white rounded-lg px-5 py-2.5 hover:bg-accent-hover transition-all active:scale-95"
+          >
+            {{ isAuthenticated ? 'Open the app' : 'Upload a document' }}
+          </a>
+          <a href="#how" class="text-sm font-medium text-ink border border-line rounded-lg px-5 py-2.5 hover:bg-surface-alt transition-all active:scale-95">
+            See how it works
+          </a>
+        </div>
+      </div>
+
+      <!-- Live product demonstration: the real loop, not a stock illustration. -->
+      <div class="md:col-span-7">
+        <div class="relative rounded-2xl border border-line bg-surface shadow-xl shadow-black/5 overflow-hidden">
+          <div class="flex items-center gap-1.5 px-4 h-9 border-b border-line bg-surface-alt">
+            <span class="w-2.5 h-2.5 rounded-full bg-line"></span>
+            <span class="w-2.5 h-2.5 rounded-full bg-line"></span>
+            <span class="w-2.5 h-2.5 rounded-full bg-line"></span>
+            <span class="ml-3 text-[11px] text-muted font-mono">operations-guide.pdf</span>
+          </div>
+
+          <div class="grid grid-cols-2 min-h-[320px]">
+            <!-- Document side -->
+            <div class="relative p-5 border-r border-line overflow-hidden">
+              <div class="text-[11px] font-semibold text-ink mb-3">Section 41 — Operations</div>
+
+              <div class="relative space-y-[7px]">
+                <!-- The highlighted passage: one continuous region, matching the real viewer. -->
+                <div
+                  class="absolute -inset-x-2 rounded-md bg-sky-400/20 border border-sky-400/40 transition-all duration-700 ease-out"
+                  [class.opacity-0]="!atLeast('citing')"
+                  [class.scale-95]="!atLeast('citing')"
+                  style="top: -4px; height: 30px;"
+                ></div>
+
+                <div class="relative h-[7px] rounded-full bg-muted w-[92%]"></div>
+                <div class="relative h-[7px] rounded-full bg-muted w-[68%]"></div>
+                <div class="h-[7px] rounded-full bg-line w-[88%] mt-4"></div>
+                <div class="h-[7px] rounded-full bg-line w-[95%]"></div>
+                <div class="h-[7px] rounded-full bg-line w-[73%]"></div>
+                <div class="h-[7px] rounded-full bg-line w-[90%]"></div>
+                <div class="h-[7px] rounded-full bg-line w-[61%]"></div>
+                <div class="h-[7px] rounded-full bg-line w-[86%]"></div>
+                <div class="h-[7px] rounded-full bg-line w-[79%]"></div>
+              </div>
+
+              <!-- Scanning sweep while retrieval runs -->
+              @if (step() === 'searching') {
+                <div class="absolute inset-x-0 top-0 h-full pointer-events-none animate-scan">
+                  <div class="h-16 w-full bg-gradient-to-b from-transparent via-accent-wash to-transparent"></div>
+                </div>
+              }
+
+              <div class="absolute bottom-3 left-5 text-[10px] text-muted font-mono">page 41</div>
+            </div>
+
+            <!-- Assistant side -->
+            <div class="p-5 flex flex-col">
+              <div class="rounded-lg border border-line bg-surface-alt px-3 py-2 mb-4 min-h-[34px] flex items-center">
+                <span class="text-xs text-ink">{{ typedQuestion() }}</span>
+                @if (step() === 'typing') {
+                  <span class="inline-block w-[2px] h-3.5 bg-accent ml-[1px] animate-caret"></span>
+                }
+              </div>
+
+              @if (step() === 'searching') {
+                <div class="flex items-center gap-2 text-xs text-muted">
+                  <span class="w-3 h-3 border-2 border-line border-t-accent rounded-full animate-spin"></span>
+                  Searching 300 pages…
+                </div>
+              }
+
+              <div
+                class="transition-all duration-500 ease-out"
+                [class.opacity-0]="!atLeast('answering')"
+                [class.translate-y-2]="!atLeast('answering')"
+              >
+                <div class="text-[10px] font-semibold uppercase tracking-wide text-muted mb-1.5">Answer</div>
+                <p class="text-xs leading-relaxed text-ink mb-3">
+                  Failed calls are retried three times before the request is abandoned.
+                </p>
+
+                <div
+                  class="transition-all duration-500 delay-150 ease-out"
+                  [class.opacity-0]="!atLeast('citing')"
+                  [class.translate-y-1]="!atLeast('citing')"
+                >
+                  <div class="text-[10px] font-semibold uppercase tracking-wide text-muted mb-1.5">Evidence</div>
+                  <span class="inline-flex items-center gap-1.5 text-[11px] rounded-full border border-sky-400/40 bg-sky-400/10 text-ink px-2.5 py-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span>
+                    Page 41 · 94% match
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p class="text-xs text-muted mt-3 text-center">A recording of the real flow — question, retrieval, answer, evidence.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── The problem ─────────────────────────────────────────────────── -->
+  <section class="border-y border-line bg-surface-soft">
+    <div class="max-w-6xl mx-auto px-6 py-20 md:py-24 grid md:grid-cols-12 gap-10">
+      <div class="md:col-span-5" [appRevealOnScroll]="0">
+        <h2 class="font-display text-3xl md:text-4xl tracking-[-0.02em] leading-tight">
+          The problem isn't that AI is wrong.
+        </h2>
+      </div>
+      <div class="md:col-span-6 md:col-start-7 space-y-5 text-muted leading-relaxed" [appRevealOnScroll]="80">
+        <p>
+          It's that it's wrong <em class="text-ink not-italic font-medium">confidently</em>, in fluent prose, with
+          no way to tell the difference from a glance.
+        </p>
+        <p>
+          Ask most document assistants a question and you get a paragraph. It sounds right. It might
+          be right. But checking it means going back to the document and finding the passage
+          yourself — which is the work you were trying to avoid.
+        </p>
+        <p class="text-ink">
+          So this tool refuses to answer without showing you the receipt.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── How it works ────────────────────────────────────────────────── -->
+  <section id="how" class="max-w-6xl mx-auto px-6 py-20 md:py-28">
+    <h2 class="font-display text-3xl md:text-4xl tracking-[-0.02em] mb-14 max-w-lg" [appRevealOnScroll]="0">
+      Four steps, and you can audit every one.
+    </h2>
+
+    <ol class="relative border-l border-line ml-3 space-y-12">
+      <li class="pl-8 relative" [appRevealOnScroll]="0">
+        <span class="absolute -left-[9px] top-1 w-[18px] h-[18px] rounded-full bg-paper border-2 border-accent"></span>
+        <h3 class="font-medium mb-1.5">Your document is read and indexed</h3>
+        <p class="text-muted text-sm leading-relaxed max-w-xl">
+          PDFs and Word files are parsed page by page, keeping the position of every line. Scanned
+          pages fall back to OCR automatically, so image-only documents still work.
+        </p>
+      </li>
+      <li class="pl-8 relative" [appRevealOnScroll]="80">
+        <span class="absolute -left-[9px] top-1 w-[18px] h-[18px] rounded-full bg-paper border-2 border-accent"></span>
+        <h3 class="font-medium mb-1.5">Your question finds the relevant passages</h3>
+        <p class="text-muted text-sm leading-relaxed max-w-xl">
+          Retrieval is deterministic vector search over the document's own text — no model deciding
+          what it remembers. In Quality mode it runs several rounds, each one looking for what the
+          previous answer still hadn't covered.
+        </p>
+      </li>
+      <li class="pl-8 relative" [appRevealOnScroll]="160">
+        <span class="absolute -left-[9px] top-1 w-[18px] h-[18px] rounded-full bg-paper border-2 border-accent"></span>
+        <h3 class="font-medium mb-1.5">The answer is written from those passages only</h3>
+        <p class="text-muted text-sm leading-relaxed max-w-xl">
+          Two scores come back with it, both computed from the text rather than self-reported by the
+          model: how well retrieval matched, and how closely the answer tracks its sources.
+        </p>
+      </li>
+      <li class="pl-8 relative" [appRevealOnScroll]="240">
+        <span class="absolute -left-[9px] top-1 w-[18px] h-[18px] rounded-full bg-accent border-2 border-accent"></span>
+        <h3 class="font-medium mb-1.5">You click the citation and land on the page</h3>
+        <p class="text-muted text-sm leading-relaxed max-w-xl">
+          Every claim carries the page it came from. Click it and the exact passage is highlighted in
+          the document, so verifying an answer takes a second rather than a search.
+        </p>
+      </li>
+    </ol>
+  </section>
+
+  <!-- ── Differentiators ─────────────────────────────────────────────── -->
+  <section id="difference" class="border-t border-line bg-surface-soft">
+    <div class="max-w-6xl mx-auto px-6 py-20 md:py-28">
+      <h2 class="font-display text-3xl md:text-4xl tracking-[-0.02em] mb-14 max-w-xl" [appRevealOnScroll]="0">
+        What this does that a chat window doesn't.
+      </h2>
+
+      <div class="grid md:grid-cols-12 gap-6">
+        <article class="md:col-span-7 rounded-xl border border-line bg-surface p-7" [appRevealOnScroll]="0">
+          <h3 class="font-medium mb-2">Your documents never leave this machine</h3>
+          <p class="text-muted text-sm leading-relaxed">
+            The language model, the embeddings, the search index and the database all run locally in
+            containers on your own hardware. Nothing is uploaded to a third-party API, which matters
+            rather a lot if the document is a contract, a medical record, or unreleased work.
+          </p>
+        </article>
+
+        <article class="md:col-span-5 rounded-xl border border-line bg-surface p-7" [appRevealOnScroll]="80">
+          <h3 class="font-medium mb-2">Claims checked against the open web</h3>
+          <p class="text-muted text-sm leading-relaxed">
+            A claim from your document can be verified against outside sources, each one listed with
+            its domain and whether it supports or contradicts the claim.
+          </p>
+        </article>
+
+        <article class="md:col-span-5 rounded-xl border border-line bg-surface p-7" [appRevealOnScroll]="160">
+          <h3 class="font-medium mb-2">Read it as clean text, or as data</h3>
+          <p class="text-muted text-sm leading-relaxed">
+            Every document is also available as structured Markdown, with headings and lists
+            recovered and running page furniture stripped — or as JSON blocks, if you want to build
+            on top of it.
+          </p>
+        </article>
+
+        <article class="md:col-span-7 rounded-xl border border-line bg-surface p-7" [appRevealOnScroll]="240">
+          <h3 class="font-medium mb-2">Selection is a first-class action</h3>
+          <p class="text-muted text-sm leading-relaxed">
+            Highlight a passage to explain or summarise it. Drag a box around a diagram, chart or
+            screenshot and the same actions work there too — read by OCR where there's text, and
+            described by a vision model where there isn't.
+          </p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Closing CTA ─────────────────────────────────────────────────── -->
+  <section class="max-w-6xl mx-auto px-6 py-24 md:py-32 text-center">
+    <h2 class="font-display text-3xl md:text-5xl tracking-[-0.02em] mb-5" [appRevealOnScroll]="0">
+      Start with a document you<br class="hidden sm:block" /> already don't trust.
+    </h2>
+    <p class="text-muted mb-9 max-w-md mx-auto" [appRevealOnScroll]="80">
+      Upload it, ask the question you actually care about, and click the citation.
+    </p>
+    <a
+      [routerLink]="isAuthenticated ? '/documents' : '/register'"
+      class="inline-block text-sm font-medium bg-accent text-white rounded-lg px-6 py-3 hover:bg-accent-hover transition-all active:scale-95"
+      [appRevealOnScroll]="140"
+    >
+      {{ isAuthenticated ? 'Open the app' : 'Get started' }}
+    </a>
+  </section>
+
+  <!-- ── Footer ──────────────────────────────────────────────────────── -->
+  <footer class="border-t border-line">
+    <div class="max-w-6xl mx-auto px-6 py-10 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-2.5">
+        <span class="w-6 h-6 rounded bg-accent flex items-center justify-center shrink-0">
+          <span class="w-2 h-2 rounded-[2px] bg-white/90"></span>
+        </span>
+        <span class="text-sm font-medium">Verifiable</span>
+      </div>
+      <nav class="flex items-center gap-6 text-sm text-muted">
+        <a href="#how" class="hover:text-ink transition-colors">How it works</a>
+        <a href="#difference" class="hover:text-ink transition-colors">Why it's different</a>
+        <a routerLink="/login" class="hover:text-ink transition-colors">Sign in</a>
+      </nav>
+      <p class="text-xs text-muted">Runs locally. Your documents stay yours.</p>
+    </div>
+  </footer>
+</div>

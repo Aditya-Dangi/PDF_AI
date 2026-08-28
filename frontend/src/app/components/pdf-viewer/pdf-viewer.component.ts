@@ -195,7 +195,7 @@ export class PdfViewerComponent implements AfterViewInit, OnChanges, OnDestroy {
 
     if (!this.regionDrag.boxEl) {
       const box = document.createElement('div');
-      box.className = 'absolute border-2 border-accent bg-accent/10 pointer-events-none';
+      box.className = 'absolute border-2 border-accent bg-accent-wash pointer-events-none';
       page.overlay.appendChild(box);
       this.regionDrag.boxEl = box;
     }

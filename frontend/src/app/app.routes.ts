@@ -2,7 +2,14 @@ import { Routes } from '@angular/router';
 import { authGuard } from './core/auth.guard';
 
 export const routes: Routes = [
-  { path: '', redirectTo: 'documents', pathMatch: 'full' },
+  {
+    // Public landing page. Deliberately not behind authGuard and not redirected for signed-in
+    // users - the nav and calls to action switch to "Open app" instead, so the marketing page
+    // stays reachable rather than becoming unvisitable the moment someone has an account.
+    path: '',
+    pathMatch: 'full',
+    loadComponent: () => import('./pages/landing/landing.component').then((m) => m.LandingComponent)
+  },
   {
     path: 'login',
     loadComponent: () => import('./pages/login/login.component').then((m) => m.LoginComponent)
@@ -22,5 +29,5 @@ export const routes: Routes = [
     canActivate: [authGuard],
     loadComponent: () => import('./pages/workspace/workspace.component').then((m) => m.WorkspaceComponent)
   },
-  { path: '**', redirectTo: 'documents' }
+  { path: '**', redirectTo: '' }
 ];
